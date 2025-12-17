@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otonom Hikâye Sistemi | V.2.0</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+</head>
+
+<body>
+    <!-- CRT Scanline Overlay -->
+    <div class="crt-overlay"></div>
+
+    <canvas id="neural-canvas"></canvas>
+
+    <div class="app-container">
+        <!-- Landing Screen -->
+        <section id="landing" class="landing-section">
+            <h1 class="hero-title glitch" data-text="OTONOM HİKÂYE">OTONOM HİKÂYE</h1>
+            <div class="hero-subtitle animate__animated animate__fadeInUp animate__delay-1s">
+                DOĞRUSAL OLMAYAN SİBERNETİK ANLATI MOTORU V.2.0
+            </div>
+            <button id="btn-start" class="btn-start animate__animated animate__fadeIn animate__delay-2s">
+                SİMÜLASYONU BAŞLAT
+            </button>
+        </section>
+
+        <!-- Story Interface -->
+        <section id="story-interface" class="story-interface">
+            <!-- Left: Narrative -->
+            <div class="narrative-panel">
+                <div id="story-text" class="story-text"></div>
+                <div id="choices-container" class="choices-container"></div>
+            </div>
+
+            <!-- Right: Analysis -->
+            <div class="analysis-panel">
+
+                <div class="widget">
+                    <div class="widget-title">Psikometrik Matris</div>
+                    <div id="stats-display">
+                        <!-- Dynamic Stats Here -->
+                        <div style="color: #666; font-style: italic; font-size: 0.7rem;">Veri akışı bekleniyor...</div>
+                    </div>
+                </div>
+
+                <div class="widget" style="flex-grow: 1; display: flex; flex-direction: column;">
+                    <div class="widget-title">
+                        <span>İşlem Günlüğü</span>
+                        <span class="mono" style="animation: blink 1s infinite; color: var(--accent-red);">● REC</span>
+                    </div>
+                    <div id="log-feed" class="log-feed mono"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/story_data.js"></script>
+    <script src="js/visuals.js"></script>
+    <script src="js/engine.js"></script>
+    <script>
+        // Main Controller
+        document.getElementById('btn-start').addEventListener('click', () => {
+            const landing = document.getElementById('landing');
+            const interface = document.getElementById('story-interface');
+
+            // Transition
+            landing.classList.add('animate__fadeOut');
+            setTimeout(() => {
+                landing.style.display = 'none';
+                interface.style.display = 'flex';
+                interface.classList.add('animate__animated', 'animate__fadeIn');
+
+                // Initialize Engine
+                window.engine = new StoryEngine();
+                window.engine.startStory();
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html>
