@@ -11,50 +11,50 @@ const STORY_DATA = {
                 "text": "Kapsülün camını yumruklayarak kır.",
                 //"tag": "SALDIRGANLIK",
                 "target": "ch1_breakout",
-                "effects": { "aggression": 15, "rationality": -5 }
+                "effects": { "saldırganlık": 15, "rasyonellik": -5 }
             },
             {
                 "text": "Kameraya bak ve analiz et. 'Beni duyuyor musun?'",
                 //"tag": "RASYONEL",
                 "target": "ch1_analyze",
-                "effects": { "rationality": 10, "curiosity": 5 }
+                "effects": { "rasyonellik": 10, "merak": 5 }
             },
             {
                 "text": "Gözlerini kapat ve hatırlamaya çalış. 'Ben kimim?'",
                 //"tag": "MELANKOLİ",
                 "target": "ch1_memory",
-                "effects": { "melancholy": 15, "paranoia": 5 }
+                "effects": { "melankoli": 15, "paranoya": 5 }
             }
         ]
     },
 
-    // PATH A: AGGRESSION
+    // PATH A: saldırganlık
     "ch1_breakout": {
         "id": "ch1_breakout",
         "text": "Öfke, damarlarında bir yakıt gibi dolaşıyor. Yumruğunu cama geçiriyorsun. Çatlaklar örümcek ağı gibi yayılıyor. Bir vuruş daha. Ve cam patlıyor. Yere düşüyorsun, elin kanıyor ama acı hissetmiyorsun. Adrenalin her şeyi bastırıyor. Odanın köşesinde bir terminal yanıp sönüyor: <span class='highlight'>'DENEK 734 - İTAATSİZLİK TESPİT EDİLDİ'</span>.",
         "choices": [
-            { "text": "Terminal odasına koş ve verileri sil.", /*"tag": "İSYAN", */"target": "ch1_terminal_room", "effects": { "rebellion": 10 } },
-            { "text": "Odadan kaç. Arkana bakma.", /*"tag": "KAÇIŞ", */ "target": "ch1_corridor", "effects": { "fear": 5 } }
+            { "text": "Terminal odasına koş ve verileri sil.", /*"tag": "İSYAN", */"target": "ch1_terminal_room", "effects": { "başkaldırı": 10 } },
+            { "text": "Odadan kaç. Arkana bakma.", /*"tag": "KAÇIŞ", */ "target": "ch1_corridor", "effects": { "korku": 5 } }
         ]
     },
 
-    // PATH B: RATIONALITY
+    // PATH B: rasyonellik
     "ch1_analyze": {
         "id": "ch1_analyze",
         "text": "Kameranın lensi odaklanıyor. Mekanik bir vızıltı. Hoparlörlerden cızırtılı bir ses geliyor: <span class='highlight'>'Bilişsel fonksiyonlar: %98. Hoş geldin, 734.'</span> Bu ses... tanıdık değil ama itaat etmeyi emreden bir tınısı var. Kapsülün kilidi 'tık' sesiyle açılıyor. Kamera seni izlemeyi bırakmıyor.",
         "choices": [
-            { "text": "Sistem ile konuşmaya çalış.", /*"tag": "KONUŞ", */ "target": "ch1_talk", "effects": { "rationality": 5, "curiosity": 5 } },
-            { "text": "Kapsülden çık. Bakıştan uzaklaşmaya çalış.", /*"tag": "MERAK", */ "target": "ch1_exit_capsule", "effects": { "curiosity": 10 , "fear": 5 } }
+            { "text": "Sistem ile konuşmaya çalış.", /*"tag": "KONUŞ", */ "target": "ch1_talk", "effects": { "rasyonellik": 5, "merak": 5 } },
+            { "text": "Kapsülden çık. Bakıştan uzaklaşmaya çalış.", /*"tag": "MERAK", */ "target": "ch1_exit_capsule", "effects": { "merak": 10 , "korku": 5 } }
         ]
     },
 
-    // PATH C: MELANCHOLY
+    // PATH C: melankoli
     "ch1_memory": {
         "id": "ch1_memory",
         "text": "Zihninin derinliklerine dalıyorsun ama orada sadece boşluk var. Silinmiş bir hard disk gibi. Sadece tek bir görüntü beliriyor: Yağmurlu bir sokak, neon ışıklarının yansıdığı bir su birikintisi ve elinde tuttuğun solmuş bir çiçek. Bu anı sana ait mi, yoksa sana mı yüklendi?",
         "choices": [
-            { "text": "Bu anıya tutun. O senin tek gerçeğin.", /*"tag": "DUYGUSAL",*/ "target": "ch1_hold_memory", "effects": { "melancholy": 20, "hope": 5 } },
-            { "text": "Anıyı reddet. Bu bir manipülasyon.", /*"tag": "ŞÜPHE", */ "target": "ch1_reject_memory", "effects": { "paranoia": 15, "rationality": 5 } }
+            { "text": "Bu anıya tutun. O senin tek gerçeğin.", /*"tag": "DUYGUSAL",*/ "target": "ch1_hold_memory", "effects": { "melankoli": 20, "umut": 5 } },
+            { "text": "Anıyı reddet. Bu bir manipülasyon.", /*"tag": "ŞÜPHE", */ "target": "ch1_reject_memory", "effects": { "paranoya": 15, "rasyonellik": 5 } }
         ]
     },
     //TERMINAL ROOM 
@@ -63,8 +63,8 @@ const STORY_DATA = {
         "text": "Terminal odasına ulaşıyorsun. Burası hurda elektroniklerle yığılı, büyüklüğü anlaşılmayan bir oda. Sen etrafa bakarken ekranda bir anda alarm çalmaya başlıyor, ardından holografik kırmızı bir uyarı beliriyor: <span class='highlight'>'YETKİSİZ ERİŞİM.'</span>. Aynı anda odanın kapısı metal bir gürültüyle kapanırken takılıyor ve altından sürünebileceğin bir boşluk bırakıyor. Tavandaki ışıklar kırmızıya dönüyor. Terminal kilitleniyor, oda karantina moduna geçiyor. <br>Kapılar tamamen kapanmadan önce iki seçeneğin var:",
         "dynamic_text": true,
         "choices": [
-            { "text": "Kapının altından sürün. Kapı tamamen kapanmadan kaçmaya çalış.", /*"tag": "KORKU", */"target": "ch1_corridor2", "effects": { "fear": 10 } },
-            { "text": "İçeride kal. Kilitlenen odada kal ve burayı incele.", /*"tag": "CESARET", */ "target": "ch1_terminal_room2", "effects": { "bravery": 5,"curiosity": 5 } }
+            { "text": "Kapının altından sürün. Kapı tamamen kapanmadan kaçmaya çalış.", /*"tag": "KORKU", */"target": "ch1_corridor2", "effects": { "korku": 10 } },
+            { "text": "İçeride kal. Kilitlenen odada kal ve burayı incele.", /*"tag": "CESARET", */ "target": "ch1_terminal_room2", "effects": { "cesaret": 5,"merak": 5 } }
         ]
     },
 
@@ -73,8 +73,8 @@ const STORY_DATA = {
         "text": "Kapılar yüksek bir sesle kapanıyor. Alarmın periyodik sesi eşliğinde, kırmızı ışıklar altında etrafı incelemeye başlıyorsun. Hurda elektroniklerin arasında kalmış, kırık bir ekran dikkatini çekiyor. Ekranının bir köşesi parçalanmış ama hâlâ açık. Bilgisayarın yanında bir erişim kartı duruyor. Kartın üzerindeki isim silinmiş. Kartı aldıktan sonra biraz daha etrafa bakıyorsun ve tavanda vidaları gevşemiş bir havalandırma kapağı fark ediyorsun. <br>Önünde iki seçenek var:",
         "dynamic_text": true,
         "choices": [
-            { "text": "Erişim kartını terminalde kullanmayı dene.", /*"tag": "GÖREV", */"target": "ch1_terminal_card", "effects": { "rationality": 10 } },
-            { "text": "Havalandırma kapağını aç ve içeri gir.", /*"tag": "MERAK", */ "target": "ch1_vent_nomap_record", "effects": {"curiosity": 10 } }
+            { "text": "Erişim kartını terminalde kullanmayı dene.", /*"tag": "GÖREV", */"target": "ch1_terminal_card", "effects": { "rasyonellik": 10 } },
+            { "text": "Havalandırma kapağını aç ve içeri gir.", /*"tag": "MERAK", */ "target": "ch1_vent_nomap_record", "effects": {"merak": 10 } }
         ]
     },
 
@@ -83,9 +83,9 @@ const STORY_DATA = {
         "text": "<br>Terminale kartı takıyorsun. Ekranda bir mesaj beliriyor: “Kimlik doğrulandı, $%3+]?*-!<”. Terminal açılıyor ama sistem bozulmuş; satırlar arasında anlamsız semboller kayıyor, dosyaların bazı bölümleri eksik yükleniyor. Açabildiğin iki dosya var: “BİNA KROKİSİ” ve “DENEK PROGRAMI”. Denek programını açtığında yüzlerce denek numarası ve durum bilgisi akıyor ekrana. Liste aşağı doğru kayarken bir satır gözlerine takılıyor: “734 – AKTİF.” Tam o anda dışarıdan uçangözlerin(droneların) metalik pervane sesleri duyuluyor. Duvarların ardından bir ses yankılanıyor: “Denek 734. Kaçma ihtimalin yok. Teslim ol. Aksi halde ateş edilecek.” Kapı kilitleri açılmaya başlıyor. Zamanın çok az. <br>Yapabileceğin 3 şey var:",
         "dynamic_text": true,
         "choices": [
-            { "text": "Bina krokisine hızlıca göz at ve havalandırmadan kaç.", /*"tag": "RASYONEL", */"target": "ch1_vent_map_record", "effects": { "rationality": 10 } },
-            { "text": "Denek Programı'ndan kendi kaydını sil ve havalandırmadan kaç.", /*"tag": "KAÇIŞ", */ "target": "ch1_vent_nomap_norecord", "effects": {"fear": 5 , "rationality": 5} },
-            { "text": "Ellerini kaldır ve teslim ol.", /*"tag": "Ürkek", */ "target": "end_drone", "effects": {"fear": 10 } }
+            { "text": "Bina krokisine hızlıca göz at ve havalandırmadan kaç.", /*"tag": "RASYONEL", */"target": "ch1_vent_map_record", "effects": { "rasyonellik": 10 } },
+            { "text": "Denek Programı'ndan kendi kaydını sil ve havalandırmadan kaç.", /*"tag": "KAÇIŞ", */ "target": "ch1_vent_nomap_norecord", "effects": {"korku": 5 , "rasyonellik": 5} },
+            { "text": "Ellerini kaldır ve teslim ol.", /*"tag": "Ürkek", */ "target": "end_drone", "effects": {"korku": 10 } }
         ]
     },
 
@@ -97,7 +97,7 @@ const STORY_DATA = {
         "choices": [
             { "text": "Sağa git", /*"tag": "", */ "target": "ch1_v01", "effects": {"": 0 } },
             { "text": "Sola git", /*"tag": "", */ "target": "ch1_v01", "effects": {"": 0 } },
-            { "text": "Karşıya git", /*"tag": "", */ "target": "ch1_caught", "effects": {"curiosity": 30 } }
+            { "text": "Karşıya git", /*"tag": "", */ "target": "ch1_caught", "effects": {"merak": 30 } }
         ]
     },
 
@@ -106,9 +106,9 @@ const STORY_DATA = {
         "text": "Krokiye hızlıca göz atarken kilitlerin açılma sesini duyuyorsun. Zamanın kalmadığını anlayıp erişim kartını da kaparak havalandırma kapağını açıyor, içeri girer girmez kapağı geri kapatıyorsun. Uçangözler (dronelar) odayı geziyor; seni bulamıyorlar ama yine de etraftaki bilgisayarlar dâhil her şeye ateş ederek parçalıyorlar. Sen havalandırmada ilerlemeye başlıyorsun. Krokide iki odanın yerini hatırlıyorsun. <br>Şimdi yapabileceğin üç şey var:",
         "dynamic_text": true,
         "choices": [
-            { "text": "Yönetim Odasına git. Tesisin merkezi; bütün bu sistemi kapatabilecek yer orası olabilir.", /*"tag": "", */ "target": "ch1_admin", "effects": { "aggression": 15 } },
-            { "text": "Arşiv Bölümüne git. Eski deney kayıtları, silinmiş veriler ve gerçeklerin olduğu yere...", /*"tag": "", */ "target": "ch1_archives_v01", "effects": {"rationality": 15 , "melancholy": 5} },
-            { "text": "Havalandırmada bir süre daha saklan.", /*"tag": "BEKLEYİŞ", */ "target": "ch1_vent_wait", "effects": {"fear": 15 } }
+            { "text": "Yönetim Odasına git. Tesisin merkezi; bütün bu sistemi kapatabilecek yer orası olabilir.", /*"tag": "", */ "target": "ch1_admin", "effects": { "saldırganlık": 15 } },
+            { "text": "Arşiv Bölümüne git. Eski deney kayıtları, silinmiş veriler ve gerçeklerin olduğu yere...", /*"tag": "", */ "target": "ch1_archives_v01", "effects": {"rasyonellik": 15 , "melankoli": 5} },
+            { "text": "Havalandırmada bir süre daha saklan.", /*"tag": "BEKLEYİŞ", */ "target": "ch1_vent_wait", "effects": {"korku": 15 } }
         ]
     },
 
@@ -118,7 +118,7 @@ const STORY_DATA = {
         "choices": [
             { "text": "Sağa git", /*"tag": "", */ "target": "ch1_v00", "effects": {"": 0 } },
             { "text": "Sola git", /*"tag": "", */ "target": "ch1_v00", "effects": {"": 0 } },
-            { "text": "Karşıya git", /*"tag": "", */ "target": "ch1_caught", "effects": {"curiosity": 30 } }
+            { "text": "Karşıya git", /*"tag": "", */ "target": "ch1_caught", "effects": {"merak": 30 } }
         ]
     },
 
@@ -127,9 +127,9 @@ const STORY_DATA = {
         "text": "Havalandırmada birkaç saat daha saklanıyorsun daha sonra sıkılıp havalandırmada da biraz sürünerek etrafa bakıyorsun. Terminal odasının kapısı kitlendiği için geri dönmenin mantıksız olduğunu anlıyorsun ve diğer 3 havalandırma deliğinden birine gitmeye karar veriyorsun. Krokide 2 yeri hatırlıyorsun ama karşıdan sürekli sesler gelen odayı hatırlamıyorsun.<br><br>Arşive mi gideceksin, Yönetim Odasına mı yoksa karşıdaki havalandırmaya mı?",
         "dynamic_text": true,
         "choices": [
-            { "text": "Yönetim Odasına git. Tesisin merkezi; bütün bu sistemi kapatabilecek yer orası olabilir.", /*"tag": "", */ "target": "ch1_admin", "effects": {"rationality": 10 } },
-            { "text": "Arşiv Bölümüne git. Eski deney kayıtları, silinmiş veriler ve gerçeklerin olduğu yere...", /*"tag": "", */ "target": "ch1_archives_v01", "effects": {"rationality": 10 } },
-            { "text": "Karşıya git. Sesler nereden geliyor?", /*"tag": "MERAKLI", */ "target": "ch1_caught", "effects": {"curiosity": 30 } }
+            { "text": "Yönetim Odasına git. Tesisin merkezi; bütün bu sistemi kapatabilecek yer orası olabilir.", /*"tag": "", */ "target": "ch1_admin", "effects": {"rasyonellik": 10 } },
+            { "text": "Arşiv Bölümüne git. Eski deney kayıtları, silinmiş veriler ve gerçeklerin olduğu yere...", /*"tag": "", */ "target": "ch1_archives_v01", "effects": {"rasyonellik": 10 } },
+            { "text": "Karşıya git. Sesler nereden geliyor?", /*"tag": "MERAKLI", */ "target": "ch1_caught", "effects": {"merak": 30 } }
         ]
     },
 
@@ -156,7 +156,7 @@ const STORY_DATA = {
         "text": "Havalandırma kapağına gelince açmak için vurmaya başlıyorsun. Vurmalarının yüksek sesi yankılanıyor ama yetersiz kaldığı için daha sert vurmaya başlıyorsun. Fakat kapak aniden açılıyor ve yere düşüyorsun. Orada sesini duyduğu için, seni bekleyen uçangözler (dronelar) tarafından yakalanıyorsun. 'Denek 734. Kaçma ihtimalin yok. Teslim ol. Aksi halde ateş edilecek.' ",
         "dynamic_text": true,
         "choices": [
-            { "text": "Teslim ol. Başka seçeneğin yok.", /*"tag": "", */ "target": "end_drone", "effects": {"fear": 10 } },
+            { "text": "Teslim ol. Başka seçeneğin yok.", /*"tag": "", */ "target": "end_drone", "effects": {"korku": 10 } },
         ]
     },
 
@@ -165,8 +165,8 @@ const STORY_DATA = {
         "text": "Havalandırma kapağına ulaştığında açmak için vurmaya başlıyorsun. Tam zorlamışken kapak aniden açılıyor, sertçe yere düşüyorsun. Ayağa kalkar kalkmaz ilerliyorsun. Koridorun içinde beliren birkaç drone seni durdurmaya çalışıyor ama etkisiz hâle getiriyorsun. Kapılar açılıyor. Ana sunucu odasındasın. Karşında, ışıkla atan devasa bir kristal sütun yükseliyor. Sistemin kalbi.",
         "dynamic_text": true,
         "choices": [
-            { "text": "Kristali parçala. Simülasyonu bitir.", /*"tag": "KAOS", */ "target": "end_system_failure", "effects": { "aggression": 30 } },
-            { "text": "Kristale dokun ve gücü kendine al.", /*"tag": "GÜÇ", */ "target": "end_like_a_god", "effects": { "control": 30 } }
+            { "text": "Kristali parçala. Simülasyonu bitir.", /*"tag": "KAOS", */ "target": "end_system_failure", "effects": { "saldırganlık": 30 } },
+            { "text": "Kristale dokun ve gücü kendine al.", /*"tag": "GÜÇ", */ "target": "end_like_a_god", "effects": { "kontrol": 30 } }
         ]
     },
 
@@ -199,8 +199,8 @@ const STORY_DATA = {
         "text": "Koridora çıkıyorsun. Burası sonsuz gibi görünen, steril beyaz ışıklarla aydınlatılmış bir labirent. Duvarlarda sayısız kapı var. Bazılarından çığlık sesleri, bazılarından ise klasik müzik duyuluyor. İleride, yerde yatan bir ceset var. Bir bilim insanı. Beyaz önlüğü kana bulanmış.",
         "dynamic_text": true,
         "choices": [
-            { "text": "Cesedi ara. İşine yarar bir şey olabilir.", /*"tag": "PRAGMATİK", */"target": "ch1_loot", "effects": { "rationality": 5, "aggression": 5 } },
-            { "text": "Üzerinden atla ve devam et. Ölüler konuşmaz.", /*"tag": "SOĞUKKANLI", */ "target": "ch1_ignore", "effects": { "melancholy": 5 } }
+            { "text": "Cesedi ara. İşine yarar bir şey olabilir.", /*"tag": "PRAGMATİK", */"target": "ch1_loot", "effects": { "rasyonellik": 5, "saldırganlık": 5 } },
+            { "text": "Üzerinden atla ve devam et. Ölüler konuşmaz.", /*"tag": "SOĞUKKANLI", */ "target": "ch1_ignore", "effects": { "melankoli": 5 } }
         ]
     },
 
@@ -209,8 +209,8 @@ const STORY_DATA = {
         "text": "Kapının altından son anda geçerek kaçıyorsun. Koşarak koridorda ileri gitmeye başlıyorsun. Burası sonsuz gibi görünen, steril beyaz ışıklarla aydınlatılmış bir labirent. Duvarlarda sayısız kapı var. Bazılarından çığlık sesleri, bazılarından ise klasik müzik duyuluyor. İleride, yerde yatan bir ceset var. Bir bilim insanı. Beyaz önlüğü kana bulanmış.",
         "dynamic_text": true,
         "choices": [
-            { "text": "Cesedi ara. İşine yarar bir şey olabilir.", /*"tag": "PRAGMATİK", */"target": "ch1_loot", "effects": { "rationality": 5, "aggression": 5 } },
-            { "text": "Üzerinden atla ve devam et. Ölüler konuşmaz.", /*"tag": "SOĞUKKANLI", */ "target": "ch1_ignore", "effects": { "melancholy": 5 } }
+            { "text": "Cesedi ara. İşine yarar bir şey olabilir.", /*"tag": "PRAGMATİK", */"target": "ch1_loot", "effects": { "rasyonellik": 5, "saldırganlık": 5 } },
+            { "text": "Üzerinden atla ve devam et. Ölüler konuşmaz.", /*"tag": "SOĞUKKANLI", */ "target": "ch1_ignore", "effects": { "melankoli": 5 } }
         ]
     },
 
@@ -218,7 +218,7 @@ const STORY_DATA = {
         "id": "ch1_loot",
         "text": "Cebinden bir manyetik kart ve eski bir ses kayıt cihazı çıkıyor. Kaydı dinliyorsun: '...Kontrolü kaybettik. Yapay Zeka, duyguları simüle etmiyor. Onları *hissediyor*. Ve şu an çok öfkeli...'",
         "choices": [
-            { "text": "Kartı al ve asansöre git.", /*"tag": "İLERLE", */ "target": "ch2_start", "effects": { "fear": 5,"rationality": 5 } }
+            { "text": "Kartı al ve asansöre git.", /*"tag": "İLERLE", */ "target": "ch2_start", "effects": { "korku": 5,"rasyonellik": 5 } }
         ]
     },
 
@@ -231,7 +231,7 @@ const STORY_DATA = {
         ]
     },
 
-    // RATIONALITY PATHS
+    // rasyonellik PATHS
 
     "ch1_talk": {
         "id": "ch1_talk",
@@ -261,8 +261,8 @@ const STORY_DATA = {
         "text": "Asansör hızla yükseliyor. Miden kasılıyor. Kapılar açıldığında, nefesin kesiliyor. Bir gökdelenin tepesindesin. Aşağıda, bulutların arasından görünen devasa bir şehir uzanıyor. Uçan araçlar, hologram reklamlar ve kilometrelerce uzanan metal kuleler. Ama şehir sessiz. Terk edilmiş.",
         "modifiers": { "awe": 10 },
         "choices": [
-            { "text": "Şehri izle. Bu manzara büyüleyici.", /*"tag": "ESTETİK", */ "target": "ch2_view", "effects": { "hope": 10, "melancholy": 5 } },
-            { "text": "Çatıdaki antene doğru git. Bir sinyal göndermelisin.", /*"tag": "GÖREV", */ "target": "ch2_antenna", "effects": { "rationality": 10 } }
+            { "text": "Şehri izle. Bu manzara büyüleyici.", /*"tag": "ESTETİK", */ "target": "ch2_view", "effects": { "umut": 10, "melankoli": 5 } },
+            { "text": "Çatıdaki antene doğru git. Bir sinyal göndermelisin.", /*"tag": "GÖREV", */ "target": "ch2_antenna", "effects": { "rasyonellik": 10 } }
         ]
     },
 
@@ -271,8 +271,8 @@ const STORY_DATA = {
         "text": "Rüzgar yüzüne çarpıyor. Şehir, ölü bir devin iskeleti gibi. {{sky_color}} gökyüzü, sanki senin ruh halini yansıtıyor. Bu yalnızlık... sana huzur mu veriyor, yoksa korku mu?",
         "dynamic_text": true,
         "choices": [
-            { "text": "Huzur. İnsanlardan uzak olmak güzel.", /*"tag": "İÇEDÖNÜK", */ "target": "ch2_peace", "effects": { "melancholy": 15 } },
-            { "text": "Korku. Buradan kurtulmalıyım.", /*"tag": "KAYGI", */ "target": "ch2_antenna", "effects": { "fear": 10 } }
+            { "text": "Huzur. İnsanlardan uzak olmak güzel.", /*"tag": "İÇEDÖNÜK", */ "target": "ch2_peace", "effects": { "melankoli": 15 } },
+            { "text": "Korku. Buradan kurtulmalıyım.", /*"tag": "KAYGI", */ "target": "ch2_antenna", "effects": { "korku": 10 } }
         ]
     },
 
@@ -281,8 +281,8 @@ const STORY_DATA = {
         "text": "Huzur bir anda bozuluyor. Önce alarm sesi, ardından sert bir rüzgâr çatının üzerinde uğuldamaya başlıyor. Ne olduğunu anlamadan çevreni bir anda 10–15 tane silahlı uçangöz(drone) sarıyor. Hepsi aynı anda durup sana odaklanıyor. Sonra hepsi tek bir cümleyi söylüyor: <span class='highlight'>'Denek 734. Kaçma ihtimalin yok. Teslim ol. Aksi halde ateş edilecek.'</span>. Önünde iki seçenek beliriyor:",
         "dynamic_text": true,
         "choices": [
-            { "text": "Arkana dön ve durmadan kaç. Terminale ulaşmaya çalış.", /*"tag": "KARARLI", */ "target": "ch2_antenna", "effects": { "aggression": 15, "bravery": 10 } },
-            { "text": "Kaçma ihtimalinin düşük olduğunu fark edip teslim ol.", /*"tag": "KABULLENMİŞ", */ "target": "end_drone", "effects": { "fear": 10 } }
+            { "text": "Arkana dön ve durmadan kaç. Terminale ulaşmaya çalış.", /*"tag": "KARARLI", */ "target": "ch2_antenna", "effects": { "saldırganlık": 15, "cesaret": 10 } },
+            { "text": "Kaçma ihtimalinin düşük olduğunu fark edip teslim ol.", /*"tag": "KABULLENMİŞ", */ "target": "end_drone", "effects": { "korku": 10 } }
         ]
     },
 
@@ -290,8 +290,8 @@ const STORY_DATA = {
         "id": "ch2_antenna",
         "text": "Anten terminaline bağlanıyorsun. Sistem, bir şifre istiyor. Ama parmakların... parmakların tuşlara dokunmadan şifreyi biliyor. Sanki bu kodlar senin bir parçan.",
         "choices": [
-            { "text": "Kodu gir: 'PROMETHEUS'.", /*"tag": "BİLİNÇALTI", */ "target": "ch3_start", "effects": { "rationality": 10 } },
-            { "text": "Sistemi hackle ve güvenlik protokollerini devre dışı bırak.", /*"tag": "HACKER", */ "target": "ch3_start_aggressive", "effects": { "aggression": 10, "rationality": 10 } }
+            { "text": "Kodu gir: 'PROMETHEUS'.", /*"tag": "BİLİNÇALTI", */ "target": "ch3_start", "effects": { "rasyonellik": 10 } },
+            { "text": "Sistemi hackle ve güvenlik protokollerini devre dışı bırak.", /*"tag": "HACKER", */ "target": "ch3_start_aggressive", "effects": { "saldırganlık": 10, "rasyonellik": 10 } }
         ]
     },
 
@@ -301,8 +301,8 @@ const STORY_DATA = {
         "chapter": "BÖLÜM 3: ÇEKİRDEK",
         "text": "Sinyal gönderildi. Ama cevap gökyüzünden değil, binanın temelinden geldi. Zemin sarsılıyor. Çatıdaki dev ekran açılıyor ve senin yüzün beliriyor. Ama daha yaşlı, daha yorgun bir versiyonun. 'Neden geldin?' diye soruyor ekrandaki yüz.",
         "choices": [
-            { "text": "'Gerçeği öğrenmeye.'", /*"tag": "FELSEFİ", */ "target": "end_truth", "effects": { "rationality": 20 } },
-            { "text": "'Seni yok etmeye.'", /*"tag": "DÜŞMAN", */ "target": "end_destruction", "effects": { "aggression": 20 } }
+            { "text": "'Gerçeği öğrenmeye.'", /*"tag": "FELSEFİ", */ "target": "end_truth", "effects": { "rasyonellik": 20 } },
+            { "text": "'Seni yok etmeye.'", /*"tag": "DÜŞMAN", */ "target": "end_destruction", "effects": { "saldırganlık": 20 } }
         ]
     },
 
@@ -310,8 +310,8 @@ const STORY_DATA = {
         "id": "ch3_start_aggressive",
         "text": "Güvenlik duvarlarını yıktın. Tüm şehirdeki ışıklar kırmızıya döndü. Alarm sesleri göğü yırtıyor. Karşına çıkan uçangözleri(dronları) teker teker etkisiz hale getirerek merkeze iniyorsun. Ana sunucu odasındasın. Karşında devasa bir kristal sütun var. Sistemin kalbi.",
         "choices": [
-            { "text": "Kristali parçala. Simülasyonu bitir.", /*"tag": "KAOS", */ "target": "end_system_failure", "effects": { "aggression": 30 } },
-            { "text": "Kristale dokun ve gücü kendine al.", /*"tag": "GÜÇ", */ "target": "end_like_a_god", "effects": { "control": 30 } }
+            { "text": "Kristali parçala. Simülasyonu bitir.", /*"tag": "KAOS", */ "target": "end_system_failure", "effects": { "saldırganlık": 30 } },
+            { "text": "Kristale dokun ve gücü kendine al.", /*"tag": "GÜÇ", */ "target": "end_like_a_god", "effects": { "kontrol": 30 } }
         ]
     },
 
@@ -351,37 +351,37 @@ const STORY_DATA = {
 
 // Expanded Vocabulary
 const VOCABULARY = {
-    "melancholy": {
+    "melankoli": {
         "adjective_atmosphere": ["hüzünlü", "kasvetli", "ağır", "sisli", "terk edilmiş", "ağlayan"],
         "color_warm": "solgun sarı",
         "color_cold": "buz mavisi",
         "sky_color": "kurşuni gri"
     },
-    "aggression": {
+    "saldırganlık": {
         "adjective_atmosphere": ["tehditkar", "keskin", "boğucu", "gergin", "kan kokan", "vahşi"],
         "color_warm": "kan kırmızısı",
         "color_cold": "zifiri siyah",
         "sky_color": "alev kırmızısı"
     },
-    "rationality": {
+    "rasyonellik": {
         "adjective_atmosphere": ["steril", "düzenli", "simetrik", "soğuk", "matematiksel", "kusursuz"],
         "color_warm": "beyaz",
         "color_cold": "lacivert",
         "sky_color": "elektrik mavisi"
     },
-    "paranoia": {
+    "paranoya": {
         "adjective_atmosphere": ["izleyen", "fısıldayan", "kıpırdayan", "sahte", "gözleyen"],
         "color_warm": "neon mor",
         "color_cold": "karanlık yeşil",
         "sky_color": "titreyen mor"
     },
-    "fear": {
+    "korku": {
         "adjective_atmosphere": ["boğucu", "daraltıcı", "nefes kesen", "kilitlenmiş", "ürkütücü"],
         "color_warm": "mor",
         "color_cold": "siyah",
         "sky_color": "gri"
     },
-    "bravery": {
+    "cesaret": {
         "adjective_atmosphere": ["kararlı", "net", "odaklı", "dirençli", "soğukkanlı"],
         "color_warm": "kırmızı",
         "color_cold": "gece mavisi",
@@ -393,16 +393,22 @@ const VOCABULARY = {
         "color_cold": "gümüş",
         "sky_color": "mavi"
     },
-    "curiosity":{
+    "merak":{
         "adjective_atmosphere": ["meraklı", "keşif dolu", "araştırmacı", "dolaşan"],
         "color_warm": "turuncu",
         "color_cold": "sarı",
         "sky_color": "turkuaz"
     },
-    "control": {
+    "kontrol": {
         "adjective_atmosphere": ["sakin", "soğukkanlı", "düzenli", "hakim"],
         "color_warm": "kehribar",
         "color_cold": "çelik mavisi",
         "sky_color": "soluk mavi"
+    },
+    "başkaldırı": {
+        "adjective_atmosphere": ["isyankâr", "ateşli", "sarsıcı", "özgürlük arayan"],
+        "color_warm": "alev turuncusu",
+        "color_cold": "koyu bordo",
+        "sky_color": "dumanlı kırmızı"
     }
 };
