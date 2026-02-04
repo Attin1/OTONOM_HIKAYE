@@ -22,6 +22,7 @@ Projenin Amacı
 
 Bu çalışmanın temel hedefi, dijital çağın etkileşim odaklı anlatı beklentilerine yanıt verebilen, kullanıcıyı pasif bir okuyucu olmaktan çıkararak anlatının aktif bir bileşeni hâline getiren bir sistem geliştirmektir.
 
+Linki: https://attin1.github.io/OTONOM_HIKAYE/
 ------
 
 Non-Linear Autonomous Story Generation System Based on User Preferences and Emotion Analysis
@@ -45,3 +46,6 @@ Dynamic and evolving story flow
 Objective
 
 The main objective of this project is to design an interactive storytelling system that transforms the user from a passive reader into an active participant, enabling personalized and emotionally adaptive narratives.
+
+
+Link: https://attin1.github.io/OTONOM_HIKAYE/
