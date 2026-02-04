@@ -1,85 +1,667 @@
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Otonom Hikâye Sistemi | V.2.1</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <title>Otonom Hikaye Motoru v6</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&family=Source+Code+Pro&display=swap');
+
+        :root {
+            --bg: #050505;
+            --panel: #111;
+            --text: #eee;
+            --accent: #00e5ff;
+            --border: #333;
+            --success: #00ff9d;
+            --danger: #ff3860;
+            --warn: #ffdd57;
+            --sky-bg: #111;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Exo 2', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: background 2s ease;
+        }
+
+        /* Giriş Ekranı */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.98);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99;
+        }
+
+        .login-box {
+            background: var(--panel);
+            padding: 40px;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.15);
+        }
+
+        .login-box h2 {
+            color: var(--accent);
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        input[type="password"] {
+            width: 90%;
+            padding: 12px;
+            margin: 15px 0;
+            background: #000;
+            color: #fff;
+            border: 1px solid #444;
+            font-family: 'Source Code Pro', monospace;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #000;
+            padding: 12px 30px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            transition: 0.3s;
+        }
+        .btn:hover { box-shadow: 0 0 15px var(--accent); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Oyun Arayüzü */
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            height: 95vh;
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 15px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Sol Panel: Hikaye */
+        #story-log {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            scroll-behavior: smooth;
+        }
+
+        .ai-msg { 
+            margin-bottom: 30px; 
+            animation: fadeIn 0.5s ease; 
+            border-left: 3px solid var(--accent); 
+            padding-left: 15px; 
+        }
+
+        .user-choice-log { 
+            color: #666; 
+            font-size: 0.9rem; 
+            margin-bottom: 20px; 
+            font-style: italic; 
+            border-left: 3px solid #333; 
+            padding-left: 15px; 
+        }
+
+        #controls {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .choice-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #444;
+            color: #eee;
+            padding: 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: 'Source Code Pro', monospace;
+            transition: 0.2s;
+            border-radius: 4px;
+        }
+        .choice-btn:hover { 
+            border-color: var(--accent); 
+            color: var(--accent); 
+            background: rgba(0, 229, 255, 0.05); 
+        }
+
+        .end-btn {
+            margin-top: 10px;
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 10px;
+            cursor: pointer;
+            font-family: 'Source Code Pro', monospace;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        .end-btn:hover { background: var(--danger); color: #fff; }
+
+        /* Sağ Panel: Analiz */
+        .sidebar { 
+            padding: 20px; 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+        
+        .metric-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        /* Duygu Barı */
+        .bar-container {
+            width: 100%; 
+            height: 10px; 
+            background: #222; 
+            border-radius: 5px; 
+            overflow: hidden; 
+            position: relative;
+        }
+
+        .bar-marker {
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            width: 4px; 
+            background: #fff;
+            box-shadow: 0 0 5px #000; 
+            transition: left 1s ease-in-out;
+        }
+
+        /* Atmosfer Barları */
+        .emotion-item {
+            margin-bottom: 12px;
+        }
+
+        .emotion-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .emotion-value {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .emotion-bar {
+            height: 100%;
+            transition: width 1s ease-in-out;
+            border-radius: 4px;
+        }
+
+        #sentiment-label { 
+            font-size: 1.5rem; 
+            color: var(--success); 
+            font-weight: bold; 
+            margin-top: 5px; 
+        }
+
+        #model-info { 
+            font-size: 0.7rem; 
+            color: #555; 
+            margin-top: auto; 
+            text-align: center; 
+            padding-top: 20px;
+        }
+
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .blink { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+    </style>
 </head>
-
 <body>
-    <!-- CRT Scanline Overlay -->
-    <div class="crt-overlay"></div>
 
-    <canvas id="neural-canvas"></canvas>
-
-    <div class="app-container">
-        <!-- Landing Screen -->
-        <section id="landing" class="landing-section">
-            <h1 class="hero-title glitch" data-text="OTONOM HİKÂYE">OTONOM HİKÂYE</h1>
-            <div class="hero-subtitle animate__animated animate__fadeInUp animate__delay-1s">
-                DOĞRUSAL OLMAYAN SİBERNETİK ANLATI MOTORU V.2.1
-            </div>
-            <button id="btn-start" class="btn-start animate__animated animate__fadeIn animate__delay-2s">
-                SİMÜLASYONU BAŞLAT
-            </button>
-        </section>
-
-        <!-- Story Interface -->
-        <section id="story-interface" class="story-interface">
-            <!-- Left: Narrative -->
-            <div class="narrative-panel">
-                <div id="story-text" class="story-text"></div>
-                <div id="choices-container" class="choices-container"></div>
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>HİKAYE MOTORU v6</h2>
+            <input type="password" id="api-key-input" placeholder="Google API Key (AIzaSy...)">
+            
+            <div class="checkbox-container">
+                <input type="checkbox" id="save-key-check">
+                <label for="save-key-check">Anahtarı bu tarayıcıya kaydet</label>
             </div>
 
-            <!-- Right: Analysis -->
-            <div class="analysis-panel">
-
-                <div class="widget">
-                    <div class="widget-title">Psikometrik Matris</div>
-                    <div id="stats-display">
-                        <!-- Dynamic Stats Here -->
-                        <div style="color: #666; font-style: italic; font-size: 0.7rem;">Veri akışı bekleniyor...</div>
-                    </div>
-                </div>
-
-                <div class="widget" style="flex-grow: 1; display: flex; flex-direction: column;">
-                    <div class="widget-title">
-                        <span>İşlem Günlüğü</span>
-                        <span class="mono" style="animation: blink 1s infinite; color: var(--accent-red);">● REC</span>
-                    </div>
-                    <div id="log-feed" class="log-feed mono"></div>
-                </div>
-            </div>
-        </section>
+            <button class="btn" onclick="initSystem()">BAĞLAN</button>
+            <div id="login-msg" style="margin-top:15px; font-size:0.8rem; height:20px;"></div>
+        </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="js/story_data.js"></script>
-    <script src="js/visuals.js"></script>
-    <script src="js/engine.js"></script>
+    <div class="container" id="game-interface" style="display:none;">
+        
+        <div class="panel">
+            <div id="story-log"></div>
+            <div id="controls"></div>
+        </div>
+
+        <div class="panel sidebar">
+            
+            <div class="metric-box">
+                <h3>Duygu Analizi (Real-Time)</h3>
+                <div class="bar-container">
+                    <div style="width:100%; height:100%; background: linear-gradient(90deg, #ff3860 0%, #ffdd57 50%, #00ff9d 100%); opacity:0.3;"></div>
+                    <div id="sentiment-marker" class="bar-marker" style="left: 50%;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#666; margin-top:5px;">
+                    <span>Karanlık</span>
+                    <span>Aydınlık</span>
+                </div>
+                <div id="sentiment-label">NÖTR</div>
+            </div>
+
+            <div class="metric-box">
+                <h3>Atmosfer Profili (Birikimli)</h3>
+                <div id="atmosphere-bars"></div>
+            </div>
+
+            <div class="metric-box">
+                <h3>Sistem Durumu</h3>
+                <div id="status-text" style="color:#888;">BEKLİYOR</div>
+            </div>
+
+            <div id="model-info">Model: <span id="model-name">...</span></div>
+        </div>
+
+    </div>
+
     <script>
-        // Main Controller
-        document.getElementById('btn-start').addEventListener('click', () => {
-            const landing = document.getElementById('landing');
-            const interface = document.getElementById('story-interface');
+        let API_KEY = "";
+        let ACTIVE_MODEL = "";
+        let storyHistory = [];
+        let emotionData = {};
+        let isFirstScene = true;
 
-            // Transition
-            landing.classList.add('animate__fadeOut');
-            setTimeout(() => {
-                landing.style.display = 'none';
-                interface.style.display = 'flex';
-                interface.classList.add('animate__animated', 'animate__fadeIn');
 
-                // Initialize Engine
-                window.engine = new StoryEngine();
-                window.engine.startStory();
-            }, 1000);
-        });
+        const EMOTIONS = {
+            "melankoli": { color: "#f1c40f", theme_warm: "#f1c40f", theme_cold: "#2980b9", theme_sky: "#7f8c8d" },
+            "saldırganlık": { color: "#e74c3c", theme_warm: "#e74c3c", theme_cold: "#000000", theme_sky: "#c0392b" },
+            "rasyonellik": { color: "#ffffff", theme_warm: "#ffffff", theme_cold: "#2c3e50", theme_sky: "#3498db" },
+            "paranoya": { color: "#9b59b6", theme_warm: "#9b59b6", theme_cold: "#1b2631", theme_sky: "#8e44ad" },
+            "korku": { color: "#8e44ad", theme_warm: "#8e44ad", theme_cold: "#000000", theme_sky: "#2c3e50" },
+            "cesaret": { color: "#c0392b", theme_warm: "#c0392b", theme_cold: "#2c3e50", theme_sky: "#2980b9" },
+            "merak": { color: "#e67e22", theme_warm: "#e67e22", theme_cold: "#f1c40f", theme_sky: "#1abc9c" },
+            "kontrol": { color: "#d35400", theme_warm: "#d35400", theme_cold: "#2c3e50", theme_sky: "#34495e" },
+            "başkaldırı": { color: "#e67e22", theme_warm: "#e67e22", theme_cold: "#4a235a", theme_sky: "#e74c3c" }
+        };
+
+        // --- BAŞLANGIÇ ---
+        window.onload = () => {
+            const savedKey = localStorage.getItem("gemini_api_key_v6");
+            if (savedKey) {
+                document.getElementById('api-key-input').value = savedKey;
+                document.getElementById('save-key-check').checked = true;
+            }
+            setupEmotionBars();
+        };
+
+        function setupEmotionBars() {
+            const container = document.getElementById('atmosphere-bars');
+            let html = '';
+            
+            Object.keys(EMOTIONS).forEach(key => {
+                emotionData[key] = 0;
+                html += `
+                    <div class="emotion-item">
+                        <div class="emotion-label">
+                            <span>${key}</span>
+                            <span class="emotion-value" id="val-${key}">0%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div id="bar-${key}" class="emotion-bar" style="width:0%; background:${EMOTIONS[key].color};"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        async function initSystem() {
+            const keyInput = document.getElementById('api-key-input');
+            const saveCheck = document.getElementById('save-key-check');
+            const msgDiv = document.getElementById('login-msg');
+            const btn = document.querySelector('.btn');
+
+            API_KEY = keyInput.value.trim();
+            if (!API_KEY) {
+                msgDiv.innerText = "Lütfen API anahtarı girin!";
+                msgDiv.style.color = "var(--danger)";
+                return;
+            }
+
+            if (saveCheck.checked) {
+                localStorage.setItem("gemini_api_key_v6", API_KEY);
+            } else {
+                localStorage.removeItem("gemini_api_key_v6");
+            }
+
+            msgDiv.innerHTML = "<span class='blink'>Model aranıyor...</span>";
+            btn.disabled = true;
+
+            try {
+                const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+                const response = await fetch(listUrl);
+                const data = await response.json();
+
+                if (!response.ok) throw new Error("API Key geçersiz veya bağlantı yok.");
+
+                const models = data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"));
+                
+                let selected = models.find(m => m.name.includes("gemini-1.5-flash"));
+                if (!selected) selected = models.find(m => m.name.includes("gemini-1.0-pro"));
+                if (!selected) selected = models[0];
+
+                ACTIVE_MODEL = selected.name.replace("models/", "");
+
+                msgDiv.innerText = "Bağlandı!";
+                msgDiv.style.color = "var(--success)";
+                
+                setTimeout(() => {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('game-interface').style.display = 'grid';
+                    document.getElementById('model-name').innerText = ACTIVE_MODEL;
+                    startGame();
+                }, 800);
+
+            } catch (err) {
+                msgDiv.innerText = "Hata: " + err.message;
+                msgDiv.style.color = "var(--danger)";
+                btn.disabled = false;
+            }
+        }
+
+        // --- HİKAYE MOTORU ---
+        async function generateContent(userPrompt, isFinal = false) {
+            const controls = document.getElementById('controls');
+            const statusText = document.getElementById('status-text');
+            
+            controls.innerHTML = `<div style="text-align:center; color:#666; padding:20px;" class="blink">> ${isFinal ? "FİNAL YAZILIYOR..." : "YENİ SENARYO HESAPLANIYOR..."}</div>`;
+            statusText.innerText = "YAPAY ZEKA DÜŞÜNÜYOR...";
+            statusText.style.color = "var(--accent)";
+
+            if (storyHistory.length === 0) {
+                let systemInstruction = `
+            Sen bir interaktif hikâye motorusun.
+            Yanıtın SADECE geçerli bir JSON olmalı.
+
+            JSON FORMAT:
+            {
+            "text": "Hikâye",
+            "choices": ["Seçenek 1", "Seçenek 2"],
+            "sentiment": {
+                "primary": "merak",
+                "intensity": 70,
+                "score": 50,
+                "label": "Gergin"
+            }
+            }
+            `;
+
+                if (isFinal) {
+                    systemInstruction += `
+            BU HİKÂYE BURADA BİTECEK.
+            choices boş [] olmalı.
+            `;
+                }
+
+                storyHistory.push({
+                    role: "user",
+                    parts: [{ text: systemInstruction }]
+                });
+            }
+
+            
+            storyHistory.push({ role: "user", parts: [{ text: userPrompt }] });
+   
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${ACTIVE_MODEL}:generateContent?key=${API_KEY}`;
+
+            const contents = [...storyHistory];
+            
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: contents,
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.9
+                        }
+                    })
+
+                });
+
+                const data = await response.json();
+                
+                if(!data.candidates || !data.candidates[0]) {
+                    throw new Error("Model yanıt vermedi");
+                }
+
+                let rawText = data.candidates[0].content.parts
+                    .map(p => p.text || "")
+                    .join("")
+                    .trim();
+                rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                
+                let storyData;
+                try {
+                    storyData = JSON.parse(rawText);
+                } catch {
+                    throw new Error("Model geçerli JSON üretmedi");
+                }
+
+                
+                storyHistory.push({ role: "model", parts: [{ text: storyData.text }] });
+                if(!storyData.sentiment) {
+                    storyData.sentiment = {
+                        primary: "rasyonellik",
+                        intensity: 50,
+                        score: 50,
+                        label: "Nötr"
+                    };
+                }
+
+                renderScene(storyData);
+                
+                statusText.innerText = "BEKLİYOR";
+                statusText.style.color = "#888";
+
+            } catch (err) {
+                console.error("Hata:", err);
+                controls.innerHTML = `<div style="color:var(--danger)">Hata: ${err.message}<br><button class="end-btn" onclick="startGame()">Yeniden Başla</button></div>`;
+                statusText.innerText = "HATA";
+                statusText.style.color = "var(--danger)";
+            }
+        }
+
+        function renderScene(data) {
+            const allowEmotionUpdate = !isFirstScene;
+
+            if (!Array.isArray(data.choices)) {
+                data.choices = [];
+            }
+            const log = document.getElementById('story-log');
+            const controls = document.getElementById('controls');
+
+            const p = document.createElement('div');
+            p.className = 'ai-msg';
+            p.innerHTML = marked.parse(data.text);
+            log.appendChild(p); 
+            log.scrollTop = log.scrollHeight;
+
+            if (data.sentiment && allowEmotionUpdate) {
+                updateSentiment(data.sentiment);
+                updateEmotions(data.sentiment.primary, data.sentiment.intensity);
+            }
+
+
+
+            controls.innerHTML = "";
+            
+            if (data.choices && data.choices.length > 0) {
+                data.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.innerText = "> " + choice;
+                    btn.onclick = () => {
+                        const userLog = document.createElement('div');
+                        userLog.className = 'user-choice-log';
+                        userLog.innerText = "▸ " + choice;
+                        log.appendChild(userLog);
+                        generateContent(`KULLANICI SEÇİMİ: ${choice}`);
+                    };
+                    controls.appendChild(btn);
+                });
+
+                const endBtn = document.createElement('button');
+                endBtn.className = 'end-btn';
+                endBtn.innerText = "HİKAYEYİ SONLANDIR";
+                endBtn.onclick = () => {
+                    if(confirm("Hikayeyi şimdi bitirmek istiyor musun?")) {
+                        generateContent("Kullanıcı hikayeyi bitirmek istiyor. Mevcut olaylara göre tatmin edici bir final yaz.", true);
+                    }
+                };
+                controls.appendChild(endBtn);
+            } else {
+                controls.innerHTML = `<button class="btn" onclick="location.reload()">YENİ HİKAYE</button>`;
+            }
+            
+            isFirstScene = false;
+
+
+        }
+
+        function updateSentiment(sentiment) {
+            const marker = document.getElementById('sentiment-marker');
+            const label = document.getElementById('sentiment-label');
+            
+            const score = sentiment.score || 50;
+            marker.style.left = `${score}%`;
+            
+            label.innerText = (sentiment.label || "NÖTR").toUpperCase();
+            
+            if (score < 30) label.style.color = "var(--danger)";
+            else if (score > 70) label.style.color = "var(--success)";
+            else label.style.color = "var(--warn)";
+        }
+
+        function updateEmotions(primary, intensity) {
+            // Baskın duyguyu artır
+            if(emotionData[primary] !== undefined) {
+                emotionData[primary] = Math.min(100, emotionData[primary] + (intensity / 4));
+            }
+
+            // Tüm barları güncelle
+            Object.keys(emotionData).forEach(key => {
+                const bar = document.getElementById(`bar-${key}`);
+                const val = document.getElementById(`val-${key}`);
+                if(bar && val) {
+                    const percent = Math.round(emotionData[key]);
+                    bar.style.width = `${percent}%`;
+                    val.innerText = `${percent}%`;
+                }
+            });
+
+            // Temayı güncelle
+            if(EMOTIONS[primary]) {
+                const theme = EMOTIONS[primary];
+                document.documentElement.style.setProperty('--accent', theme.theme_warm);
+                document.body.style.backgroundColor = theme.theme_cold;
+                
+                const storyLog = document.getElementById('story-log');
+                storyLog.style.borderTop = `5px solid ${theme.theme_sky}`;
+                storyLog.style.boxShadow = `inset 0 20px 50px -20px ${theme.theme_sky}44`;
+            }
+        }
+
+        function startGame() {
+            isFirstScene = true;
+            document.getElementById('sentiment-label').innerText = "NÖTR";
+            document.getElementById('sentiment-marker').style.left = "50%";
+            storyHistory = [];
+            document.getElementById('story-log').innerHTML = "";
+            
+            // Duyguları sıfırla
+            Object.keys(emotionData).forEach(key => {emotionData[key] = 0;});
+            document.documentElement.style.setProperty('--accent', '#00e5ff');
+            document.body.style.backgroundColor = '#050505';
+            
+            const komut = `Bana rastgele, benzersiz bir bilim kurgu, macera veya gerilim hikayesi başlat. Giriş sahnesini yaz ve 2-3 seçenek sun.`;
+            
+            generateContent(komut);
+        }
+
     </script>
 </body>
-
 </html>
