@@ -22,7 +22,7 @@ Projenin Amacı
 
 Bu çalışmanın temel hedefi, dijital çağın etkileşim odaklı anlatı beklentilerine yanıt verebilen, kullanıcıyı pasif bir okuyucu olmaktan çıkararak anlatının aktif bir bileşeni hâline getiren bir sistem geliştirmektir.
 
-
+------
 
 Non-Linear Autonomous Story Generation System Based on User Preferences and Emotion Analysis
 
