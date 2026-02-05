@@ -9,7 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&family=Source+Code+Pro&display=swap');
 
         :root {
-            --bg: #050505;
+            --bg: #050505;  
             --panel: #111;
             --text: #eee;
             --accent: #00e5ff;
@@ -616,8 +616,8 @@
                     const btn = document.createElement('button');
                     btn.className = 'choice-btn';
                     const safeEmotion = choice.emotion ?? "belirsiz";
-                    // btn.innerText = `> ${choice.text} (${safeEmotion})`;  //(duygu da yazar)
-                    btn.innerText = choice.text;  // sadece metin
+                    btn.innerText = `> ${choice.text} (${safeEmotion})`;  //(duygu da yazar)
+                    // btn.innerText = choice.text;  // sadece metin
 
                     btn.onclick = () => {
                         const extraText = document.getElementById("user-extra-text")?.value.trim();
