@@ -151,17 +151,19 @@
             background: #0a0a0a;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 4px;
         }
 
         .choice-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid #444;
             color: #eee;
-            padding: 15px;
+            padding: 8px 12px;
             text-align: left;
             cursor: pointer;
             font-family: 'Source Code Pro', monospace;
+            font-size: 0.85rem;
+            line-height: 1.3; 
             transition: 0.2s;
             border-radius: 4px;
         }
@@ -307,7 +309,7 @@
         <div class="panel sidebar">
             
             <div class="metric-box">
-                <h3>Duygu Analizi (Real-Time)</h3>
+                <h3>ANLIK HİKAYE ATMOSFERİ</h3>
                 <div class="bar-container">
                     <div style="width:100%; height:100%; background: linear-gradient(90deg, #ff3860 0%, #ffdd57 50%, #00ff9d 100%); opacity:0.3;"></div>
                     <div id="sentiment-marker" class="bar-marker" style="left: 50%;"></div>
@@ -320,7 +322,7 @@
             </div>
 
             <div class="metric-box">
-                <h3>Atmosfer Profili (Birikimli)</h3>
+                <h3>Duygu Analizi</h3>
                 <div id="atmosphere-bars"></div>
             </div>
 
@@ -349,9 +351,7 @@
             "paranoya": { color: "#9b59b6", theme_warm: "#9b59b6", theme_cold: "#1b2631", theme_sky: "#8e44ad" },
             "korku": { color: "#8e44ad", theme_warm: "#8e44ad", theme_cold: "#000000", theme_sky: "#2c3e50" },
             "cesaret": { color: "#c0392b", theme_warm: "#c0392b", theme_cold: "#2c3e50", theme_sky: "#2980b9" },
-            "merak": { color: "#e67e22", theme_warm: "#e67e22", theme_cold: "#f1c40f", theme_sky: "#1abc9c" },
-            "kontrol": { color: "#d35400", theme_warm: "#d35400", theme_cold: "#2c3e50", theme_sky: "#34495e" },
-            "başkaldırı": { color: "#e67e22", theme_warm: "#e67e22", theme_cold: "#4a235a", theme_sky: "#e74c3c" }
+            "merak": { color: "#e67e22", theme_warm: "#e67e22", theme_cold: "#f1c40f", theme_sky: "#1abc9c" }
         };
 
         // --- BAŞLANGIÇ ---
@@ -441,7 +441,10 @@
         }
 
         // --- HİKAYE MOTORU ---
-        async function generateContent(userPrompt, isFinal = false) {
+        async function generateContent(userPrompt, isFinal = false, choiceData = null) {
+            if (choiceData && choiceData.emotion && typeof choiceData.weight === "number") {
+                updateEmotions(choiceData.emotion, choiceData.weight * 100);
+            }
             const controls = document.getElementById('controls');
             const statusText = document.getElementById('status-text');
             
@@ -464,7 +467,26 @@
                 "score": 50,
                 "label": "Gergin"
             }
+            Her choice:
+            - FARKLI bir baskın duygu taşımalı
+            - emotion alanı ZORUNLUDUR
+            - weight alanı ZORUNLUDUR
+            - Kesinlikle Toplamları 100 olacak şekilde en az 3 farklı duygu içermelidir!
+            choices bir string dizisi OLAMAZ.
+
+            choices şu formatta OLMAK ZORUNDA:
+            [
+                {
+                "text": "Seçenek metni",
+                "emotion": "merak | korku | rasyonellik | cesaret | paranoya ",
+                "weight": 0.1 - 0.4 arası
+                }
+            ]
+
+            Her choice:
+            - FARKLI bir baskın duygu taşımalı
             }
+            
             `;
 
                 if (isFinal) {
@@ -548,6 +570,19 @@
         function renderScene(data) {
             const allowEmotionUpdate = !isFirstScene;
 
+            data.choices = data.choices.filter(c =>
+                c &&
+                typeof c === "object" &&
+                typeof c.text === "string" &&
+                typeof c.emotion === "string"
+            );
+
+            data.choices = data.choices.map(c => ({
+                ...c,
+                emotion: c.emotion || "merak",
+                weight: typeof c.weight === "number" ? c.weight : 0.2
+            }));
+
             if (!Array.isArray(data.choices)) {
                 data.choices = [];
             }
@@ -560,42 +595,144 @@
             log.appendChild(p); 
             log.scrollTop = log.scrollHeight;
 
-            if (data.sentiment && allowEmotionUpdate) {
-                updateSentiment(data.sentiment);
-                updateEmotions(data.sentiment.primary, data.sentiment.intensity);
+            if (data.sentiment) {
+                updateSentiment(data.sentiment); // HER ZAMAN
             }
 
 
 
+
+
             controls.innerHTML = "";
-            
+                        
+            // Kullanıcı ek metin girişi
+
+
             if (data.choices && data.choices.length > 0) {
                 data.choices.forEach(choice => {
+                    // choice artık OBJECT
+                    // { text: "...", emotion: "merak", weight: 0.25 }
+
                     const btn = document.createElement('button');
                     btn.className = 'choice-btn';
-                    btn.innerText = "> " + choice;
+                    const safeEmotion = choice.emotion ?? "belirsiz";
+                    btn.innerText = `> ${choice.text} (${safeEmotion})`;  //(duygu da yazar)
+                    // btn.innerText = choice.text;  // sadece metin
+
                     btn.onclick = () => {
+                        const extraText = document.getElementById("user-extra-text")?.value.trim();
+
                         const userLog = document.createElement('div');
                         userLog.className = 'user-choice-log';
-                        userLog.innerText = "▸ " + choice;
+                        userLog.innerText = `▸ ${choice.text}`;
                         log.appendChild(userLog);
-                        generateContent(`KULLANICI SEÇİMİ: ${choice}`);
+
+                        let prompt = `
+                    KULLANICI SEÇİMİ:
+                    ${choice.text}
+
+                    Baskın Duygu: ${choice.emotion}
+                    Yoğunluk: ${choice.weight}
+                    `;
+
+                        if (extraText) {
+                            prompt += `
+
+                    KULLANICININ EK NOTU (yorumdur, yeni olay değildir):
+                    ${extraText}
+                    `;
+                        }
+
+                        generateContent(prompt, false, choice);
                     };
+
+
                     controls.appendChild(btn);
                 });
+
+                // --- SERBEST METİN GİRİŞİ ---
+                const inputWrapper = document.createElement('div');
+                inputWrapper.style.marginTop = "3px";
+
+                inputWrapper.innerHTML = `
+                    <div style="
+                        display:flex;
+                        gap:5px;
+                        align-items:flex-start;
+                    ">
+                        <div style="flex:1;">
+                            <textarea id="free-text-input"
+                                placeholder="Seçeneklerden birini seçebilir veya kendi metnini yazarak hikayeyi istediğin gibi şekillendirebilirsin."
+                                style="
+                                    width:100%;
+                                    min-height:10px;
+                                    background:#000;
+                                    color:#fff;
+                                    border:1px solid #444;
+                                    padding:10px;
+                                    font-family:'Source Code Pro', monospace;
+                                    resize:vertical;
+                                "></textarea>
+
+                        </div>
+
+                        <button id="free-text-send"
+                            style="
+                                height:38px;
+                                padding:0 12px;
+                                font-size:0.7rem;
+                                white-space:nowrap;
+                                background:rgba(255,255,255,0.05);
+                                border:1px solid #444;
+                                color:#aaa;
+                                cursor:pointer;
+                                border-radius:4px;
+                            ">
+                            ▶ Devam
+                        </button>
+                    </div>
+                `;
+
+                const sendBtn = inputWrapper.querySelector("#free-text-send");
+
+                sendBtn.onclick = () => {
+                    const text = document.getElementById("free-text-input").value.trim();
+                    if (!text) return;
+
+                    const userLog = document.createElement('div');
+                    userLog.className = 'user-choice-log';
+                    userLog.innerText = `▸ ${text}`;
+                    log.appendChild(userLog);
+
+                    generateContent(
+                        `KULLANICI SERBEST METNİ:
+                        ${text}
+                        Bu metinden kullanıcının duygusunu çıkar ve hikâyeyi buna göre ilerlet.`,
+                        false,
+                        null
+                    );
+
+                    document.getElementById("free-text-input").value = "";
+                };
+
+                controls.appendChild(inputWrapper);  
 
                 const endBtn = document.createElement('button');
                 endBtn.className = 'end-btn';
                 endBtn.innerText = "HİKAYEYİ SONLANDIR";
                 endBtn.onclick = () => {
-                    if(confirm("Hikayeyi şimdi bitirmek istiyor musun?")) {
-                        generateContent("Kullanıcı hikayeyi bitirmek istiyor. Mevcut olaylara göre tatmin edici bir final yaz.", true);
+                    if (confirm("Hikayeyi şimdi bitirmek istiyor musun?")) {
+                        generateContent(
+                            "Kullanıcı hikayeyi bitirmek istiyor. Mevcut duygusal atmosfere uygun, tatmin edici bir final yaz.",
+                            true
+                        );
                     }
                 };
                 controls.appendChild(endBtn);
             } else {
                 controls.innerHTML = `<button class="btn" onclick="location.reload()">YENİ HİKAYE</button>`;
             }
+
             
             isFirstScene = false;
 
@@ -661,6 +798,8 @@
             
             generateContent(komut);
         }
+
+
 
     </script>
 </body>
