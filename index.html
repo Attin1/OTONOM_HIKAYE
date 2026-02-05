@@ -616,8 +616,8 @@
                     const btn = document.createElement('button');
                     btn.className = 'choice-btn';
                     const safeEmotion = choice.emotion ?? "belirsiz";
-                    btn.innerText = `> ${choice.text} (${safeEmotion})`;  //(duygu da yazar)
-                    // btn.innerText = choice.text;  // sadece metin
+                    // btn.innerText = `> ${choice.text} (${safeEmotion})`;  //(duygu da yazar)
+                    btn.innerText = choice.text;  // sadece metin
 
                     btn.onclick = () => {
                         const extraText = document.getElementById("user-extra-text")?.value.trim();
