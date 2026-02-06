@@ -2,9 +2,12 @@
 <html lang="tr">
 <head>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/plugins/split_text_to_size.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Otonom Hikaye Motoru v6</title>
+    <title>Otonom Hikaye Motoru v7</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&family=Source+Code+Pro&display=swap');
 
@@ -286,7 +289,7 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h2>HİKAYE MOTORU v6</h2>
+            <h2>HİKAYE MOTORU v7</h2>
             <input type="password" id="api-key-input" placeholder="Google API Key (AIzaSy...)">
             
             <div class="checkbox-container">
@@ -351,12 +354,25 @@
             "paranoya": { color: "#9b59b6", theme_warm: "#9b59b6", theme_cold: "#1b2631", theme_sky: "#8e44ad" },
             "korku": { color: "#8e44ad", theme_warm: "#8e44ad", theme_cold: "#000000", theme_sky: "#2c3e50" },
             "cesaret": { color: "#c0392b", theme_warm: "#c0392b", theme_cold: "#2c3e50", theme_sky: "#2980b9" },
-            "merak": { color: "#e67e22", theme_warm: "#e67e22", theme_cold: "#f1c40f", theme_sky: "#1abc9c" }
+            "merak": { color: "#e67e22", theme_warm: "#e67e22", theme_cold: "#f1c40f", theme_sky: "#1abc9c" },
+            "çaresizlik": { color: "#7f8c8d", theme_warm: "#95a5a6", theme_cold: "#2c3e50", theme_sky: "#34495e" },
+            "huzur": { color: "#1abc9c", theme_warm: "#a3e4d7", theme_cold: "#2e4053", theme_sky: "#85c1e9" },
+            "endişe": { color: "#f39c12", theme_warm: "#f5b041", theme_cold: "#566573", theme_sky: "#7d6608" },
+            "umut": { color: "#2ecc71", theme_warm: "#58d68d", theme_cold: "#1e8449", theme_sky: "#27ae60" },  
+            "romantizm": { color: "#ff69b4", theme_warm: "#ff69b4", theme_cold: "#2c3e50", theme_sky: "#e84393" },
+            "öfke": { color: "#c0392b", theme_warm: "#e74c3c", theme_cold: "#2c3e50", theme_sky: "#922b21" },
+            "suçluluk": { color: "#95a5a6", theme_warm: "#bdc3c7", theme_cold: "#2c3e50", theme_sky: "#7f8c8d" },
+            "yalnızlık": { color: "#34495e", theme_warm: "#5d6d7e", theme_cold: "#1b2631", theme_sky: "#2c3e50" },
+            "kararlılık": { color: "#1f618d", theme_warm: "#2980b9", theme_cold: "#154360", theme_sky: "#1abc9c" },
+            "şaşkınlık": { color: "#f4d03f", theme_warm: "#f7dc6f", theme_cold: "#7d6608", theme_sky: "#f39c12" },
+            "neşe": { color: "#f1c40f", theme_warm: "#f9e79f", theme_cold: "#7d6608", theme_sky: "#f7dc6f" },
+            "umutsuzluk": { color: "#566573", theme_warm: "#5d6d7e", theme_cold: "#212f3c", theme_sky: "#2c3e50" },
+            "tutku": { color: "#e84393", theme_warm: "#ff6fae", theme_cold: "#2c3e50", theme_sky: "#c0392b" }
         };
 
         // --- BAŞLANGIÇ ---
         window.onload = () => {
-            const savedKey = localStorage.getItem("gemini_api_key_v6");
+            const savedKey = localStorage.getItem("gemini_api_key_v7");
             if (savedKey) {
                 document.getElementById('api-key-input').value = savedKey;
                 document.getElementById('save-key-check').checked = true;
@@ -371,7 +387,7 @@
             Object.keys(EMOTIONS).forEach(key => {
                 emotionData[key] = 0;
                 html += `
-                    <div class="emotion-item">
+                    <div class="emotion-item" style="display:none;">
                         <div class="emotion-label">
                             <span>${key}</span>
                             <span class="emotion-value" id="val-${key}">0%</span>
@@ -400,9 +416,9 @@
             }
 
             if (saveCheck.checked) {
-                localStorage.setItem("gemini_api_key_v6", API_KEY);
+                localStorage.setItem("gemini_api_key_v7", API_KEY);
             } else {
-                localStorage.removeItem("gemini_api_key_v6");
+                localStorage.removeItem("gemini_api_key_v7");
             }
 
             msgDiv.innerHTML = "<span class='blink'>Model aranıyor...</span>";
@@ -415,7 +431,14 @@
 
                 if (!response.ok) throw new Error("API Key geçersiz veya bağlantı yok.");
 
-                const models = data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"));
+                if (!data.models || !Array.isArray(data.models)) {
+                    throw new Error("Model listesi alınamadı");
+                }
+
+                const models = data.models.filter(m =>
+                    m.supportedGenerationMethods &&
+                    m.supportedGenerationMethods.includes("generateContent")
+                );
                 
                 let selected = models.find(m => m.name.includes("gemini-1.5-flash"));
                 if (!selected) selected = models.find(m => m.name.includes("gemini-1.0-pro"));
@@ -442,9 +465,7 @@
 
         // --- HİKAYE MOTORU ---
         async function generateContent(userPrompt, isFinal = false, choiceData = null) {
-            if (choiceData && choiceData.emotion && typeof choiceData.weight === "number") {
-                updateEmotions(choiceData.emotion, choiceData.weight * 100);
-            }
+            
             const controls = document.getElementById('controls');
             const statusText = document.getElementById('status-text');
             
@@ -455,44 +476,46 @@
             if (storyHistory.length === 0) {
                 let systemInstruction = `
             Sen bir interaktif hikâye motorusun.
-            Yanıtın SADECE geçerli bir JSON olmalı.
+            Yanıtın SADECE geçerli bir JSON olmalı. Açıklama, markdown, metin yazma.
 
-            JSON FORMAT:
+            FORMAT:
             {
-            "text": "Hikâye",
-            "choices": ["Seçenek 1", "Seçenek 2"],
+            "text": "Hikâye sahnesi",
+            "choices": [
+                {
+                "text": "Seçenek metni",
+                "emotion": "merak | korku | rasyonellik | cesaret | paranoya | melankoli | saldırganlık | çaresizlik | huzur | endişe | umut | romantizm | öfke | suçluluk | yalnızlık | kararlılık | şaşkınlık | neşe | umutsuzluk | tutku"
+                "emotions": {
+                    "merak": 0.34,
+                    "korku": 0.33,
+                    "cesaret": 0.33
+                }
+                }
+            ],
             "sentiment": {
                 "primary": "merak",
                 "intensity": 70,
                 "score": 50,
                 "label": "Gergin"
             }
-            Her choice:
-            - FARKLI bir baskın duygu taşımalı
-            - emotion alanı ZORUNLUDUR
-            - weight alanı ZORUNLUDUR
-            - Kesinlikle Toplamları 100 olacak şekilde en az 3 farklı duygu içermelidir!
-            choices bir string dizisi OLAMAZ.
-
-            choices şu formatta OLMAK ZORUNDA:
-            [
-                {
-                "text": "Seçenek metni",
-                "emotion": "merak | korku | rasyonellik | cesaret | paranoya ",
-                "weight": 0.1 - 0.4 arası
-                }
-            ]
-
-            Her choice:
-            - FARKLI bir baskın duygu taşımalı
             }
-            
+
+            KURALLAR:
+            - JSON dışında HİÇBİR şey yazma.
+            - choices bir DİZİ olmak zorunda.
+            - İlk sahnede choices ASLA boş olamaz.
+            - En az 2 seçim üret.
+            - Her seçim FARKLI baskın duygu taşımalı.
+            - emotions içindeki değerlerin toplamı = 1.0 olmalı.
+            - emotions içinde en az 3 duygu olmalı.
+            - Eski seçimlerde kullanılmamış duyguları tercih et.
             `;
 
                 if (isFinal) {
                     systemInstruction += `
-            BU HİKÂYE BURADA BİTECEK.
-            choices boş [] olmalı.
+            BU SAHNE FİNALDİR.
+            choices: [] olmak ZORUNDA.
+            JSON dışında HİÇBİR ŞEY yazma.
             `;
                 }
 
@@ -502,13 +525,11 @@
                 });
             }
 
-            
             storyHistory.push({ role: "user", parts: [{ text: userPrompt }] });
-   
+
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${ACTIVE_MODEL}:generateContent?key=${API_KEY}`;
 
             const contents = [...storyHistory];
-            
 
             try {
                 const response = await fetch(url, {
@@ -525,9 +546,15 @@
                 });
 
                 const data = await response.json();
-                
-                if(!data.candidates || !data.candidates[0]) {
-                    throw new Error("Model yanıt vermedi");
+
+                if (!response.ok) {
+                    console.error("API Hatası:", data);
+                    throw new Error(data.error?.message || "API erişim hatası");
+                }
+
+                if (!data.candidates || !data.candidates[0]) {
+                    console.error("Boş cevap:", data);
+                    throw new Error("Model yanıt vermedi (boş candidates)");
                 }
 
                 let rawText = data.candidates[0].content.parts
@@ -540,10 +567,10 @@
                 try {
                     storyData = JSON.parse(rawText);
                 } catch {
-                    throw new Error("Model geçerli JSON üretmedi");
+                    console.error("JSON Parse Edilemedi:", rawText);
+                    throw new Error("Model JSON formatında yanıt vermedi");
                 }
 
-                
                 storyHistory.push({ role: "model", parts: [{ text: storyData.text }] });
                 if(!storyData.sentiment) {
                     storyData.sentiment = {
@@ -568,14 +595,20 @@
         }
 
         function renderScene(data) {
+
+            // 🔒 choices yoksa boş dizi yap
+            if (!Array.isArray(data.choices)) {
+                data.choices = [];
+            }
             const allowEmotionUpdate = !isFirstScene;
 
-            data.choices = data.choices.filter(c =>
-                c &&
-                typeof c === "object" &&
-                typeof c.text === "string" &&
-                typeof c.emotion === "string"
-            );
+            if (data.choices && typeof data.choices === "object") {
+                Object.keys(data.choices).forEach(key => {
+                    const c = data.choices[key];
+                    if (!c.text || typeof c.text !== "string") delete data.choices[key];
+                    if (!c.emotions || typeof c.emotions !== "object") delete data.choices[key];
+                });
+            }
 
             data.choices = data.choices.map(c => ({
                 ...c,
@@ -599,16 +632,18 @@
                 updateSentiment(data.sentiment); // HER ZAMAN
             }
 
-
-
-
-
             controls.innerHTML = "";
                         
             // Kullanıcı ek metin girişi
 
 
             if (data.choices && data.choices.length > 0) {
+                if (isFirstScene && data.choices.length === 0) {
+                    console.warn("İlk sahnede boş choices geldi, yeniden sahne isteniyor...");
+                    generateContent("İlk sahnede mutlaka 2-3 seçim üret.", false);
+                    return;
+                }
+
                 data.choices.forEach(choice => {
                     // choice artık OBJECT
                     // { text: "...", emotion: "merak", weight: 0.25 }
@@ -616,7 +651,10 @@
                     const btn = document.createElement('button');
                     btn.className = 'choice-btn';
                     const safeEmotion = choice.emotion ?? "belirsiz";
-                    btn.innerText = `> ${choice.text} (${safeEmotion})`;  //(duygu da yazar)
+                    const emotionList = Object.keys(choice.emotions)
+                        .map(e => `${e}:${Math.round(choice.emotions[e]*100)}%`)
+                        .join(" ");
+                    btn.innerText = `> ${choice.text} [${emotionList}]`;  //(duygu da yazar)
                     // btn.innerText = choice.text;  // sadece metin
 
                     btn.onclick = () => {
@@ -637,10 +675,14 @@
 
                         if (extraText) {
                             prompt += `
-
                     KULLANICININ EK NOTU (yorumdur, yeni olay değildir):
                     ${extraText}
                     `;
+                        }
+                        if (choice.emotions) {
+                            Object.entries(choice.emotions).forEach(([emo, weight]) => {
+                                updateEmotions(emo, weight * 100);
+                            });
                         }
 
                         generateContent(prompt, false, choice);
@@ -730,7 +772,11 @@
                 };
                 controls.appendChild(endBtn);
             } else {
-                controls.innerHTML = `<button class="btn" onclick="location.reload()">YENİ HİKAYE</button>`;
+                controls.innerHTML = `
+                    <button class="btn" onclick="downloadStoryPDF()">PDF OLARAK İNDİR</button>
+                    <br><br>
+                    <button class="btn" onclick="location.reload()">YENİ HİKAYE</button>
+                `;
             }
 
             
@@ -756,17 +802,28 @@
         function updateEmotions(primary, intensity) {
             // Baskın duyguyu artır
             if(emotionData[primary] !== undefined) {
-                emotionData[primary] = Math.min(100, emotionData[primary] + (intensity / 4));
+                emotionData[primary] = Math.min(100, emotionData[primary] + (intensity / 2));
             }
 
             // Tüm barları güncelle
             Object.keys(emotionData).forEach(key => {
                 const bar = document.getElementById(`bar-${key}`);
                 const val = document.getElementById(`val-${key}`);
-                if(bar && val) {
+                const item = bar?.closest('.emotion-item');
+                if(bar && val && item) {
                     const percent = Math.round(emotionData[key]);
+                if (percent <= 0) {
+                    item.style.display = "none";
+                } else {
+                    // Eğer daha önce gizliyse, animasyonla göster
+                    if (item.style.display === "none") {
+                        item.style.display = "block";
+                        item.style.animation = "fadeIn 0.4s ease";
+                    }
+
                     bar.style.width = `${percent}%`;
                     val.innerText = `${percent}%`;
+                }
                 }
             });
 
@@ -774,7 +831,7 @@
             if(EMOTIONS[primary]) {
                 const theme = EMOTIONS[primary];
                 document.documentElement.style.setProperty('--accent', theme.theme_warm);
-                document.body.style.backgroundColor = theme.theme_cold;
+                document.body.style.backgroundColor = theme.color;
                 
                 const storyLog = document.getElementById('story-log');
                 storyLog.style.borderTop = `5px solid ${theme.theme_sky}`;
@@ -794,13 +851,103 @@
             document.documentElement.style.setProperty('--accent', '#00e5ff');
             document.body.style.backgroundColor = '#050505';
             
-            const komut = `Bana rastgele, benzersiz bir bilim kurgu, macera veya gerilim hikayesi başlat. Giriş sahnesini yaz ve 2-3 seçenek sun.`;
+            const komut = `Bana rastgele, benzersiz bir hikaye başlat. Giriş sahnesini yaz ve 2-3 seçenek sun.`;
             
             generateContent(komut);
         }
 
+        async function downloadStoryPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF("p", "mm", "a4");               
+            doc.setFontSize(10);
+            doc.text("Font yükleniyor, lütfen bekleyiniz...", 15, 15);
 
+            const getBase64FromUrl = async (url) => {
+                const data = await fetch(url);
+                const blob = await data.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => {
+                        const base64data = reader.result;
+                        resolve(base64data.split(',')[1]);
+                    }
+                });
+            };
 
+            try {
+                const fontBase64 = await getBase64FromUrl("https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf");
+                
+                doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
+                doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+                doc.setFont("Roboto");
+
+                doc.deletePage(1);
+                doc.addPage();
+                
+                const margin = 15;
+                const pageHeight = 297;
+                const pageWidth = 210;
+                const contentWidth = pageWidth - (margin * 2); // 180mm (A4 genişliği - kenarlar)
+                let y = margin;
+
+                function checkPage(add = 6) {
+                    if (y + add > pageHeight - margin) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                }
+
+                doc.setFontSize(14);
+                doc.text("Otonom Hikaye Motoru – Hikaye Raporu", margin, y);
+                y += 10;
+
+                doc.setFontSize(10);
+                doc.text(`Tarih: ${new Date().toLocaleString("tr-TR")}`, margin, y);
+                y += 10;
+
+                doc.setFontSize(11);
+                doc.text("Hikaye Metni:", margin, y);
+                y += 8;
+
+                const storyNodes = document.querySelectorAll(".ai-msg");
+                let storyText = "";
+
+                storyNodes.forEach((el, i) => {
+                    storyText += `SAHNE ${i + 1}:\n${el.innerText}\n\n------------------------------------------------\n\n`;
+                });
+
+                const lines = doc.splitTextToSize(storyText, contentWidth);
+                
+                lines.forEach(line => {
+                    checkPage(6);
+                    doc.text(line, margin, y);
+                    y += 6;
+                });
+
+                y += 10;
+                checkPage();
+
+                doc.setFontSize(12);
+                doc.text("Duygu Analizi:", margin, y);
+                y += 8;
+
+                doc.setFontSize(10);
+                if (typeof emotionData !== 'undefined') {
+                    Object.keys(emotionData).forEach(key => {
+                        checkPage(6);
+                        doc.text(`${key.toLocaleUpperCase('tr-TR')}: %${Math.round(emotionData[key])}`, margin, y);
+                        y += 6;
+                    });
+                }
+
+                doc.save("hikaye_raporu.pdf");
+
+            } catch (err) {
+                console.error("PDF oluşturma hatası:", err);
+                alert("PDF oluşturulurken font yükleme hatası oluştu. İnternet bağlantınızı kontrol edin.");
+            }
+        }
     </script>
 </body>
 </html>
