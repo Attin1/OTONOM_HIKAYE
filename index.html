@@ -4,7 +4,6 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/plugins/split_text_to_size.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Otonom Hikaye Motoru v7</title>
@@ -283,6 +282,17 @@
         .blink { animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
+        /* Duygu sıralama animasyonu */
+        #atmosphere-bars {
+            position: relative;
+        }
+
+        .emotion-item {
+            transition: transform 0.5s ease, opacity 0.3s ease;
+            will-change: transform;
+        }
+
+
     </style>
 </head>
 <body>
@@ -311,18 +321,21 @@
 
         <div class="panel sidebar">
             
+            
             <div class="metric-box">
                 <h3>ANLIK HİKAYE ATMOSFERİ</h3>
-                <div class="bar-container">
-                    <div style="width:100%; height:100%; background: linear-gradient(90deg, #ff3860 0%, #ffdd57 50%, #00ff9d 100%); opacity:0.3;"></div>
-                    <div id="sentiment-marker" class="bar-marker" style="left: 50%;"></div>
+                <div id="sentiment-label"
+                    style="
+                        font-size:1.6rem;
+                        font-weight:700;
+                        text-align:center;
+                        margin-top:10px;
+                        letter-spacing:1px;
+                    ">
+                    NÖTR
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#666; margin-top:5px;">
-                    <span>Karanlık</span>
-                    <span>Aydınlık</span>
-                </div>
-                <div id="sentiment-label">NÖTR</div>
             </div>
+            
 
             <div class="metric-box">
                 <h3>Duygu Analizi</h3>
@@ -345,7 +358,7 @@
         let storyHistory = [];
         let emotionData = {};
         let isFirstScene = true;
-
+        let interactionLog = [];
 
         const EMOTIONS = {
             "melankoli": { color: "#f1c40f", theme_warm: "#f1c40f", theme_cold: "#2980b9", theme_sky: "#7f8c8d" },
@@ -464,7 +477,15 @@
         }
 
         // --- HİKAYE MOTORU ---
+        let isGenerating = false;
+
         async function generateContent(userPrompt, isFinal = false, choiceData = null) {
+            if (isGenerating) {
+                console.warn("Zaten bir istek devam ediyor!");
+                return;
+            }
+            
+            isGenerating = true;
             
             const controls = document.getElementById('controls');
             const statusText = document.getElementById('status-text');
@@ -484,7 +505,7 @@
             "choices": [
                 {
                 "text": "Seçenek metni",
-                "emotion": "merak | korku | rasyonellik | cesaret | paranoya | melankoli | saldırganlık | çaresizlik | huzur | endişe | umut | romantizm | öfke | suçluluk | yalnızlık | kararlılık | şaşkınlık | neşe | umutsuzluk | tutku"
+                "emotion": "romantizm | merak | korku | rasyonellik | cesaret | paranoya | melankoli | saldırganlık | çaresizlik | huzur | endişe | umut | romantizm | öfke | suçluluk | yalnızlık | kararlılık | şaşkınlık | neşe | umutsuzluk | tutku"
                 "emotions": {
                     "merak": 0.34,
                     "korku": 0.33,
@@ -525,272 +546,228 @@
                 });
             }
 
-            storyHistory.push({ role: "user", parts: [{ text: userPrompt }] });
+            // --- EMOTION STATE EKLE (modelin hikayeyi duygulara göre sürdürmesi için) ---
+    const emotionState = getEmotionStateForModel();
+    if (emotionState) {
+        storyHistory.push({
+            role: "user",
+            parts: [{ text: `EMOTION_STATE: ${JSON.stringify(emotionState)}` }]
+        });
+    }
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${ACTIVE_MODEL}:generateContent?key=${API_KEY}`;
+    storyHistory.push({ role: "user", parts: [{ text: userPrompt }] });
 
-            const contents = [...storyHistory];
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${ACTIVE_MODEL}:generateContent?key=${API_KEY}`;
 
+    const contents = [...storyHistory];
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: contents,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 0.9
+                    
+                }
+            })
+
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("API Hatası:", data);
+            throw new Error(data.error?.message || "API erişim hatası");
+        }
+
+        if (!data.candidates || !data.candidates[0]) {
+            console.error("Boş cevap:", data);
+            throw new Error("Model yanıt vermedi (boş candidates)");
+        }
+
+        let rawText = data.candidates[0].content.parts
+            .map(p => p.text || "")
+            .join("")
+            .trim();
+        rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+        
+        let storyData;
+        try {
+            storyData = JSON.parse(rawText);
+        } catch {
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: contents,
-                        generationConfig: {
-                            responseMimeType: "application/json",
-                            temperature: 0.9
-                        }
-                    })
-
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    console.error("API Hatası:", data);
-                    throw new Error(data.error?.message || "API erişim hatası");
+                const start = rawText.indexOf("{");
+                const end = rawText.lastIndexOf("}");
+                if (start !== -1 && end !== -1) {
+                    storyData = JSON.parse(rawText.slice(start, end + 1));
+                } else {
+                    throw new Error();
                 }
-
-                if (!data.candidates || !data.candidates[0]) {
-                    console.error("Boş cevap:", data);
-                    throw new Error("Model yanıt vermedi (boş candidates)");
-                }
-
-                let rawText = data.candidates[0].content.parts
-                    .map(p => p.text || "")
-                    .join("")
-                    .trim();
-                rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                
-                let storyData;
-                try {
-                    storyData = JSON.parse(rawText);
-                } catch {
-                    console.error("JSON Parse Edilemedi:", rawText);
-                    throw new Error("Model JSON formatında yanıt vermedi");
-                }
-
-                storyHistory.push({ role: "model", parts: [{ text: storyData.text }] });
-                if(!storyData.sentiment) {
-                    storyData.sentiment = {
-                        primary: "rasyonellik",
-                        intensity: 50,
-                        score: 50,
-                        label: "Nötr"
-                    };
-                }
-
-                renderScene(storyData);
-                
-                statusText.innerText = "BEKLİYOR";
-                statusText.style.color = "#888";
-
-            } catch (err) {
-                console.error("Hata:", err);
-                controls.innerHTML = `<div style="color:var(--danger)">Hata: ${err.message}<br><button class="end-btn" onclick="startGame()">Yeniden Başla</button></div>`;
-                statusText.innerText = "HATA";
-                statusText.style.color = "var(--danger)";
+            } catch {
+                console.error("JSON Parse Edilemedi:", rawText);
+                throw new Error("Model JSON formatında yanıt vermedi");
             }
         }
 
-        function renderScene(data) {
+        storyHistory.push({ role: "model", parts: [{ text: storyData.text }] });
+        if(!storyData.sentiment) {
+            storyData.sentiment = {
+                primary: "rasyonellik",
+                intensity: 50,
+                score: 50,
+                label: "Nötr"
+            };
+        }
 
-            // 🔒 choices yoksa boş dizi yap
-            if (!Array.isArray(data.choices)) {
-                data.choices = [];
-            }
-            const allowEmotionUpdate = !isFirstScene;
+        renderScene(storyData);
+        
+        statusText.innerText = "BEKLİYOR";
+        statusText.style.color = "#888";
 
-            if (data.choices && typeof data.choices === "object") {
-                Object.keys(data.choices).forEach(key => {
-                    const c = data.choices[key];
-                    if (!c.text || typeof c.text !== "string") delete data.choices[key];
-                    if (!c.emotions || typeof c.emotions !== "object") delete data.choices[key];
-                });
-            }
+    } catch (err) {
+        console.error("Hata:", err);
+        controls.innerHTML = `<div style="color:var(--danger)">Hata: ${err.message}<br><button class="end-btn" onclick="startGame()">Yeniden Başla</button></div>`;
+        statusText.innerText = "HATA";
+        statusText.style.color = "var(--danger)";
+    } finally {
+        isGenerating = false;
+    }
+}
 
-            data.choices = data.choices.map(c => ({
-                ...c,
-                emotion: c.emotion || "merak",
-                weight: typeof c.weight === "number" ? c.weight : 0.2
-            }));
+function renderScene(data) {
+    if (!data || typeof data !== 'object') {
+        console.error("Invalid scene data:", data);
+        return;
+    }
 
-            if (!Array.isArray(data.choices)) {
-                data.choices = [];
-            }
-            const log = document.getElementById('story-log');
-            const controls = document.getElementById('controls');
+    // Validate choices
+    if (!Array.isArray(data.choices)) data.choices = [];
+    
+    data.choices = data.choices.filter(c =>
+        c && typeof c === 'object' &&
+        typeof c.text === "string" &&
+        c.text.trim().length > 0 &&
+        typeof c.emotions === "object" &&
+        c.emotions !== null
+    ).slice(0, 5); // Maximum 5 choices
 
-            const p = document.createElement('div');
-            p.className = 'ai-msg';
-            p.innerHTML = marked.parse(data.text);
-            log.appendChild(p); 
-            log.scrollTop = log.scrollHeight;
+    data.choices = data.choices.map(c => ({
+        ...c,
+        emotion: c.emotion || "merak",
+        emotions: c.emotions && typeof c.emotions === 'object' ? normalizeEmotions(c.emotions) : { "merak": 1 }
+    }));
 
-            if (data.sentiment) {
-                updateSentiment(data.sentiment); // HER ZAMAN
-            }
+    const log = document.getElementById('story-log');
+    const controls = document.getElementById('controls');
+    
+    if (!log || !controls) return;
 
-            controls.innerHTML = "";
-                        
-            // Kullanıcı ek metin girişi
+    const p = document.createElement('div');
+    p.className = 'ai-msg';
+    p.innerHTML = marked.parse(data.text || "");
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
 
+    if (data.sentiment && typeof data.sentiment === 'object') {
+        updateSentiment(data.sentiment);
+    }
 
-            if (data.choices && data.choices.length > 0) {
-                if (isFirstScene && data.choices.length === 0) {
-                    console.warn("İlk sahnede boş choices geldi, yeniden sahne isteniyor...");
-                    generateContent("İlk sahnede mutlaka 2-3 seçim üret.", false);
-                    return;
-                }
+    controls.innerHTML = "";
 
-                data.choices.forEach(choice => {
-                    // choice artık OBJECT
-                    // { text: "...", emotion: "merak", weight: 0.25 }
+    // If no choices and not final scene, request regeneration
+    if (data.choices.length === 0 && isFirstScene) {
+        console.warn("No choices generated, requesting retry...");
+        setTimeout(() => {
+            generateContent("Eksik seçenekler. Lütfen 2-3 seçeneği JSON formatında ver.", false);
+        }, 1000);
+        return;
+    }
 
-                    const btn = document.createElement('button');
-                    btn.className = 'choice-btn';
-                    const safeEmotion = choice.emotion ?? "belirsiz";
-                    const emotionList = Object.keys(choice.emotions)
-                        .map(e => `${e}:${Math.round(choice.emotions[e]*100)}%`)
-                        .join(" ");
-                    btn.innerText = `> ${choice.text} [${emotionList}]`;  //(duygu da yazar)
-                    // btn.innerText = choice.text;  // sadece metin
+    // ✅ FIX: Eğer choices boş ise HIKAYE BİTTİ demektir
+    if (data.choices.length === 0) {
+        // Story ended
+        controls.innerHTML = `
+            <button class="btn" onclick="downloadStoryPDF()">PDF OLARAK İNDİR</button>
+            <br><br>
+            <button class="btn" onclick="location.reload()">YENİ HİKAYE</button>
+        `;
+        return;
+    }
 
-                    btn.onclick = () => {
-                        const extraText = document.getElementById("user-extra-text")?.value.trim();
+    // Choices varsa göster
+    if (data.choices.length > 0) {
+        data.choices.forEach(choice => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = choice.text;
+            btn.onclick = () => handleChoice(choice, log);
+            controls.appendChild(btn);
+        });
 
-                        const userLog = document.createElement('div');
-                        userLog.className = 'user-choice-log';
-                        userLog.innerText = `▸ ${choice.text}`;
-                        log.appendChild(userLog);
-
-                        let prompt = `
-                    KULLANICI SEÇİMİ:
-                    ${choice.text}
-
-                    Baskın Duygu: ${choice.emotion}
-                    Yoğunluk: ${choice.weight}
-                    `;
-
-                        if (extraText) {
-                            prompt += `
-                    KULLANICININ EK NOTU (yorumdur, yeni olay değildir):
-                    ${extraText}
-                    `;
-                        }
-                        if (choice.emotions) {
-                            Object.entries(choice.emotions).forEach(([emo, weight]) => {
-                                updateEmotions(emo, weight * 100);
-                            });
-                        }
-
-                        generateContent(prompt, false, choice);
-                    };
-
-
-                    controls.appendChild(btn);
-                });
-
-                // --- SERBEST METİN GİRİŞİ ---
-                const inputWrapper = document.createElement('div');
-                inputWrapper.style.marginTop = "3px";
-
-                inputWrapper.innerHTML = `
-                    <div style="
-                        display:flex;
-                        gap:5px;
-                        align-items:flex-start;
+        // Add free text input
+        const inputWrapper = document.createElement('div');
+        inputWrapper.style.marginTop = "3px";
+        inputWrapper.innerHTML = `
+            <div style="display:flex; gap:5px; align-items:flex-start;">
+                <textarea id="free-text-input"
+                    placeholder="Seçeneklerden birini seçebilir veya kendi metnini yaz..."
+                    style="
+                        width:100%;
+                        min-height:50px;
+                        background:#000;
+                        color:#fff;
+                        border:1px solid #444;
+                        padding:10px;
+                        font-family:'Source Code Pro', monospace;
+                        resize:vertical;
+                    "></textarea>
+                <button id="free-text-send"
+                    style="
+                        height:50px;
+                        padding:0 12px;
+                        font-size:0.7rem;
+                        white-space:nowrap;
+                        background:rgba(255,255,255,0.05);
+                        border:1px solid #444;
+                        color:#aaa;
+                        cursor:pointer;
+                        border-radius:4px;
                     ">
-                        <div style="flex:1;">
-                            <textarea id="free-text-input"
-                                placeholder="Seçeneklerden birini seçebilir veya kendi metnini yazarak hikayeyi istediğin gibi şekillendirebilirsin."
-                                style="
-                                    width:100%;
-                                    min-height:10px;
-                                    background:#000;
-                                    color:#fff;
-                                    border:1px solid #444;
-                                    padding:10px;
-                                    font-family:'Source Code Pro', monospace;
-                                    resize:vertical;
-                                "></textarea>
+                    ▶ Devam
+                </button>
+            </div>
+        `;
 
-                        </div>
+        const sendBtn = inputWrapper.querySelector("#free-text-send");
+        sendBtn.onclick = () => handleFreeText(log);
+        controls.appendChild(inputWrapper);
 
-                        <button id="free-text-send"
-                            style="
-                                height:38px;
-                                padding:0 12px;
-                                font-size:0.7rem;
-                                white-space:nowrap;
-                                background:rgba(255,255,255,0.05);
-                                border:1px solid #444;
-                                color:#aaa;
-                                cursor:pointer;
-                                border-radius:4px;
-                            ">
-                            ▶ Devam
-                        </button>
-                    </div>
-                `;
-
-                const sendBtn = inputWrapper.querySelector("#free-text-send");
-
-                sendBtn.onclick = () => {
-                    const text = document.getElementById("free-text-input").value.trim();
-                    if (!text) return;
-
-                    const userLog = document.createElement('div');
-                    userLog.className = 'user-choice-log';
-                    userLog.innerText = `▸ ${text}`;
-                    log.appendChild(userLog);
-
-                    generateContent(
-                        `KULLANICI SERBEST METNİ:
-                        ${text}
-                        Bu metinden kullanıcının duygusunu çıkar ve hikâyeyi buna göre ilerlet.`,
-                        false,
-                        null
-                    );
-
-                    document.getElementById("free-text-input").value = "";
-                };
-
-                controls.appendChild(inputWrapper);  
-
-                const endBtn = document.createElement('button');
-                endBtn.className = 'end-btn';
-                endBtn.innerText = "HİKAYEYİ SONLANDIR";
-                endBtn.onclick = () => {
-                    if (confirm("Hikayeyi şimdi bitirmek istiyor musun?")) {
-                        generateContent(
-                            "Kullanıcı hikayeyi bitirmek istiyor. Mevcut duygusal atmosfere uygun, tatmin edici bir final yaz.",
-                            true
-                        );
-                    }
-                };
-                controls.appendChild(endBtn);
-            } else {
-                controls.innerHTML = `
-                    <button class="btn" onclick="downloadStoryPDF()">PDF OLARAK İNDİR</button>
-                    <br><br>
-                    <button class="btn" onclick="location.reload()">YENİ HİKAYE</button>
-                `;
+        const endBtn = document.createElement('button');
+        endBtn.className = 'end-btn';
+        endBtn.innerText = "HİKAYEYİ SONLANDIR";
+        endBtn.onclick = () => {
+            if (confirm("Hikayeyi bitirmek istiyor musun?")) {
+                generateContent(
+                    "Kullanıcı hikayeyi bitirmek istiyor. Mevcut duygusal atmosfere uygun bir final yaz. choices: [] olmalı.",
+                    true
+                );
             }
+        };
+        controls.appendChild(endBtn);
+    }
 
-            
-            isFirstScene = false;
-
-
-        }
+    isFirstScene = false;
+}
 
         function updateSentiment(sentiment) {
-            const marker = document.getElementById('sentiment-marker');
             const label = document.getElementById('sentiment-label');
             
+            if (!label) return;
+            
             const score = sentiment.score || 50;
-            marker.style.left = `${score}%`;
             
             label.innerText = (sentiment.label || "NÖTR").toUpperCase();
             
@@ -800,49 +777,74 @@
         }
 
         function updateEmotions(primary, intensity) {
-            // Baskın duyguyu artır
-            if(emotionData[primary] !== undefined) {
-                emotionData[primary] = Math.min(100, emotionData[primary] + (intensity / 2));
-            }
+            const MAX_EMOTION = 100; // her duygu için maksimum %25
+    if (!primary || typeof intensity !== "number") return;
 
-            // Tüm barları güncelle
-            Object.keys(emotionData).forEach(key => {
-                const bar = document.getElementById(`bar-${key}`);
-                const val = document.getElementById(`val-${key}`);
-                const item = bar?.closest('.emotion-item');
-                if(bar && val && item) {
-                    const percent = Math.round(emotionData[key]);
-                if (percent <= 0) {
-                    item.style.display = "none";
-                } else {
-                    // Eğer daha önce gizliyse, animasyonla göster
-                    if (item.style.display === "none") {
-                        item.style.display = "block";
-                        item.style.animation = "fadeIn 0.4s ease";
-                    }
+    // intensity parametresi artık doğrudan eklenecek (çağıran yerlerde küçültüldü)
+    if (emotionData[primary] !== undefined) {
+        emotionData[primary] = Math.min(MAX_EMOTION, emotionData[primary] + intensity);
+    }
 
-                    bar.style.width = `${percent}%`;
-                    val.innerText = `${percent}%`;
+    // Tüm barları güncelle
+    Object.keys(emotionData).forEach(key => {
+        const bar = document.getElementById(`bar-${key}`);
+        const val = document.getElementById(`val-${key}`);
+        const item = bar?.closest('.emotion-item');
+        if (bar && val && item) {
+            const percent = Math.round(emotionData[key]);
+            if (percent <= 0) {
+                item.style.display = "none";
+            } else {
+                if (item.style.display === "none") {
+                    item.style.display = "block";
+                    item.style.animation = "fadeIn 0.4s ease";
                 }
-                }
-            });
-
-            // Temayı güncelle
-            if(EMOTIONS[primary]) {
-                const theme = EMOTIONS[primary];
-                document.documentElement.style.setProperty('--accent', theme.theme_warm);
-                document.body.style.backgroundColor = theme.color;
-                
-                const storyLog = document.getElementById('story-log');
-                storyLog.style.borderTop = `5px solid ${theme.theme_sky}`;
-                storyLog.style.boxShadow = `inset 0 20px 50px -20px ${theme.theme_sky}44`;
+                bar.style.width = `${percent}%`;
+                val.innerText = `${percent}%`;
             }
         }
+    });
 
+    const dominant = getDominantEmotion();
+
+    if (dominant && EMOTIONS[dominant]) {
+        const theme = EMOTIONS[dominant];
+        document.documentElement.style.setProperty('--accent', theme.theme_sky);
+        document.body.style.backgroundColor = theme.color;
+        const storyLog = document.getElementById('story-log');
+        if (storyLog) {
+            storyLog.style.borderTop = `5px solid ${theme.theme_cold}`;
+            storyLog.style.boxShadow = `inset 0 20px 50px -20px ${theme.theme_cold}44`;
+        }
+    }
+
+    // Sıralama animasyonu (aynı)
+    const container = document.getElementById("atmosphere-bars");
+    const items = Array.from(container.children).filter(item => item.style.display !== "none");
+    const positions = new Map();
+    items.forEach(item => positions.set(item, item.getBoundingClientRect().top));
+    items.sort((a, b) => {
+        const aKey = a.querySelector(".emotion-value")?.id?.replace("val-", "");
+        const bKey = b.querySelector(".emotion-value")?.id?.replace("val-", "");
+        return (emotionData[bKey] || 0) - (emotionData[aKey] || 0);
+    });
+    items.forEach(item => container.appendChild(item));
+    items.forEach(item => {
+        const oldTop = positions.get(item);
+        const newTop = item.getBoundingClientRect().top;
+        const delta = oldTop - newTop;
+        item.style.transform = `translateY(${delta}px)`;
+    });
+    requestAnimationFrame(() => items.forEach(item => item.style.transform = ""));
+        }
+
+        
         function startGame() {
             isFirstScene = true;
-            document.getElementById('sentiment-label').innerText = "NÖTR";
-            document.getElementById('sentiment-marker').style.left = "50%";
+            const lbl = document.getElementById('sentiment-label');
+
+            if (lbl) lbl.innerText = "NÖTR";
+
             storyHistory = [];
             document.getElementById('story-log').innerHTML = "";
             
@@ -851,9 +853,44 @@
             document.documentElement.style.setProperty('--accent', '#00e5ff');
             document.body.style.backgroundColor = '#050505';
             
-            const komut = `Bana rastgele, benzersiz bir hikaye başlat. Giriş sahnesini yaz ve 2-3 seçenek sun.`;
+            const themes = [
+                "Siberpunk bir şehirde, yağmurlu bir gecede işlenen gizemli bir suç.",
+                "Terk edilmiş bir su altı araştırma tesisinde geçen klostrofobik bir gerilim.",
+                "Orta Çağ fantezisi ama büyü teknolojinin yerini almış.",
+                "Issız bir çöl gezegeninde hayatta kalmaya çalışan bir kaşif.",
+                "1920'lerin İstanbul'unda geçen, doğaüstü olaylar içeren bir dedektiflik hikayesi.",
+                "Yapay zekaların yönettiği bir ütopyada sistem hatası bulan bir yazılımcı.",
+                "Kutuplarda mahsur kalan bir ekip ve aralarında insan olmayan bir şey.",
+                "Rüyaların kaydedilebildiği bir gelecekte, başkasının kabusunda sıkışıp kalmak.",
+                "Telepatik iletişimin mümkün olduğu bir evrende geçen sır ghikayesi.",
+                "Tolkienin yarattığı Orta Dünyada geçen karakterin insan, büyücü, elf, org veya cüce olduğu bir macera."
+            ];
+
+            const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+
+            const komut = `Şu konsepti temel alarak bir hikaye başlat: "${randomTheme}". 
+            
+            Lütfen şu klişeleri KULLANMA: 
+            - "Gözlerini açtı ve nerede olduğunu hatırlamıyordu."
+            - "Soğuk metal zeminde uyandı."
+            
+            Bunun yerine doğrudan aksiyonun veya gizemin ortasından başla. Giriş sahnesini yaz ve 2-3 seçenek sun.`;
             
             generateContent(komut);
+        }
+
+        function getDominantEmotion() {
+            let maxEmotion = null;
+            let maxValue = -Infinity;
+
+            Object.entries(emotionData).forEach(([key, value]) => {
+                if (value > maxValue) {
+                    maxValue = value;
+                    maxEmotion = key;
+                }
+            });
+
+            return maxEmotion;
         }
 
         async function downloadStoryPDF() {
@@ -910,11 +947,16 @@
                 doc.text("Hikaye Metni:", margin, y);
                 y += 8;
 
-                const storyNodes = document.querySelectorAll(".ai-msg");
+                const nodes = document.querySelectorAll(".ai-msg, .user-choice-log");
                 let storyText = "";
 
-                storyNodes.forEach((el, i) => {
-                    storyText += `SAHNE ${i + 1}:\n${el.innerText}\n\n------------------------------------------------\n\n`;
+                nodes.forEach((el) => {
+                    if (el.classList.contains("ai-msg")) {
+                        storyText += `SAHNE:\n${el.innerText}\n\n`;
+                    } else if (el.classList.contains("user-choice-log")) {
+                        storyText += `KULLANICI:\n${el.innerText.replace("▸", "").trim()}\n\n`;
+                    }
+                    storyText += "---------------------------------------------\n\n";
                 });
 
                 const lines = doc.splitTextToSize(storyText, contentWidth);
@@ -948,6 +990,291 @@
                 alert("PDF oluşturulurken font yükleme hatası oluştu. İnternet bağlantınızı kontrol edin.");
             }
         }
+
+        function res(emo) {
+            return {
+                primary: emo,
+                emotions: { [emo]: 1 },
+                sentiment: {
+                    score:
+                        emo === "neşe" ? 75 :
+                        emo === "huzur" ? 60 :
+                        emo === "endişe" ? 45 :
+                        emo === "öfke" ? 35 :
+                        emo === "çaresizlik" ? 20 : 50,
+                    label: emo
+                }
+            };
+        }
+
+        function analyzeEmotionFallback(text) {
+            const t = text.toLowerCase().trim();
+            
+            // Duygu analizi kuralları
+            const emotionMap = {
+                "merak": ["neden", "nasıl", "ne", "nedir", "bilmek"],
+                "korku": ["korkuyor", "ürküyor", "şey", "hız"],
+                "cesaret": ["yapacağım", "başarırım", "güçlü", "girişim"],
+                "neşe": ["harika", "güzel", "seviyorum", "mutlu"],
+                "üzüntü": ["üzüldü", "kötü", "acı", "çaresiz"],
+                "merak": ["sorular", "anlamak", "keşfet"],
+                "öfke": ["sinirli", "kızgın", "öfkeliyim", "hata"],
+                "huzur": ["rahat", "huzurlu", "sakin", "güvende"],
+                "endişe": ["endişeliyim", "kaygılı", "stresli", "gergin"],
+                "umut": ["umarım", "dilerim", "iyi olur", "pozitif"],
+                "romantizm": ["aşk", "romantik", "sevgili", "kalp"],
+                "suçluluk": ["suçlu", "pişman", "hata yaptım", "özür"],
+                "yalnızlık": ["yalnız", "kimse yok", "terk edilmiş", "sadece"],
+                "kararlılık": ["kararlıyım", "azimli", "hedef", "başaracağım"],
+                "şaşkınlık": ["şaşkınım", "inanamıyorum", "beklenmedik", "şok"]
+
+            };
+            
+            let detected = "merak";
+            let score = 50;
+            
+            for (const [emotion, keywords] of Object.entries(emotionMap)) {
+                if (keywords.some(kw => t.includes(kw))) {
+                    detected = emotion;
+                    score = 60;
+                    break;
+                }
+            }
+            
+            return {
+                primary: detected,
+                emotions: { [detected]: 1 },
+                sentiment: {
+                    score: score,
+                    label: detected
+                }
+            };
+        }
+
+        // 1. analyzeFreeTextEmotion - Basit ve güvenilir:
+
+async function analyzeFreeTextEmotion(text) {
+    const prompt = `Kullanıcı şu metni yazdı:
+"${text}"
+
+Bu metnin duygusal tonunu analiz et. JSON formatında cevap ver:
+{
+"emotions": {
+    "merak": 0.4,
+    "cesaret": 0.3,
+    "umut": 0.3
+},
+"primary": "merak",
+"sentiment": {
+    "score": 60,
+    "label": "Aktif"
+}
+}
+
+Kurallar:
+- Sadece JSON, herhangi bir açıklama yapma
+- emotions değerleri toplamı 1.0 olmalı
+- 2-3 duygu kullan
+`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${ACTIVE_MODEL}:generateContent?key=${API_KEY}`;
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{
+                    role: "user",
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.5,
+                    responseMimeType: "application/json"
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.warn("API hatası, fallback kullanılıyor");
+            return analyzeEmotionFallback(text);
+        }
+
+        let raw = data.candidates[0].content.parts
+            .map(p => p.text || "")
+            .join("")
+            .replace(/```json|```/g, "")
+            .trim();
+
+        let result = JSON.parse(raw);
+        
+        // Normalize
+        const total = Object.values(result.emotions || {}).reduce((a, b) => a + b, 0);
+        if (total > 0 && result.emotions) {
+            Object.keys(result.emotions).forEach(key => {
+                result.emotions[key] = result.emotions[key] / total;
+            });
+        }
+        
+        return result;
+
+    } catch (err) {
+        console.warn("JSON parse hatası, fallback kullanılıyor:", err);
+        return analyzeEmotionFallback(text);
+    }
+}
+
+// 2. handleFreeText - Basit, prompt kandırmıyor:
+
+async function handleFreeText(log) {
+    const textarea = document.getElementById("free-text-input");
+    const text = textarea?.value.trim();
+    if (!text) {
+        alert("Lütfen bir metin girin!");
+        return;
+    }
+
+    const userLog = document.createElement('div');
+    userLog.className = 'user-choice-log';
+    userLog.innerText = `▸ ${text}`;
+    log.appendChild(userLog);
+    log.scrollTop = log.scrollHeight;
+
+    const controls = document.getElementById('controls');
+    const statusText = document.getElementById('status-text');
+
+    controls.innerHTML = `<div style="text-align:center; color:#666; padding:20px;" class="blink">> YENİ SENARYO HESAPLANIYOR...</div>`;
+    statusText.innerText = "YAPAY ZEKA DÜŞÜNÜYOR...";
+    statusText.style.color = "var(--accent)";
+
+    try {
+        const analysis = await analyzeFreeTextEmotion(text);
+        if (!analysis || !analysis.emotions) throw new Error("Analiz başarısız");
+
+        interactionLog.push({
+            type: "free-text",
+            text: text,
+            analysis: analysis,
+            dominantEmotion: analysis.primary,
+            time: new Date().toISOString()
+        });
+
+        // DUYGULARI EKLE — kullanıcı girdisinin etkisini artırdım (ancak updateEmotions içindeki MAX_EMOTION ile sınırlı)
+        Object.entries(analysis.emotions).forEach(([emo, val]) => {
+            if (emotionData[emo] !== undefined) {
+                updateEmotions(emo, Math.round(val * 60)); 
+            }
+        });
+
+        updateSentiment(analysis.sentiment);
+
+        const prompt = `Kullanıcı şunu yazdı: "${text}"\n\nHikayeyi bu girdiye uygun şekilde devam ettir. Seçenekleri JSON formatında ver.`;
+
+        await generateContent(prompt, false);
+
+        if (textarea) textarea.value = "";
+    } catch (err) {
+        console.error("Hata:", err);
+        controls.innerHTML = "";
+        statusText.innerText = "HATA";
+        statusText.style.color = "var(--danger)";
+    }
+}
+
+// 3. handleChoice - Aynı basit format:
+
+async function handleChoice(choice, log) {
+    const userLog = document.createElement('div');
+    userLog.className = 'user-choice-log';
+    userLog.innerText = `▸ ${choice.text}`;
+    log.appendChild(userLog);
+    log.scrollTop = log.scrollHeight;
+
+    interactionLog.push({
+        type: "choice",
+        text: choice.text,
+        emotions: choice.emotions,
+        dominantEmotion: choice.emotion,
+        time: new Date().toISOString()
+    });
+
+    // Seçenek duygularını uygun düzeye getir (daha etkili ama yine MAX_EMOTION ile sınırlandırılır)
+    Object.entries(choice.emotions).forEach(([emo, weight]) => {
+        if (emotionData[emo] !== undefined) {
+            updateEmotions(emo, Math.round(weight * 60));
+        }
+    });
+
+    const prompt = `Kullanıcı şunu seçti: "${choice.text}"\n\nHikayeyi devam ettir.`;
+    await generateContent(prompt, false, choice);
+}
+
+// Yeni: model'e gönderilecek duygusal özet
+function getEmotionStateForModel() {
+    // emotionData içindeki mevcut yüzde değerlerini al ve model için normalize et (0..1)
+    const entries = Object.entries(emotionData).filter(([, v]) => v > 0);
+    if (entries.length === 0) return null;
+
+    const total = entries.reduce((s, [, v]) => s + v, 0);
+    const emotions = {};
+    entries.forEach(([k, v]) => {
+        emotions[k] = +(v / total).toFixed(3); // toplam 1 olacak şekilde
+    });
+
+    const dominant = getDominantEmotion() || Object.keys(emotions)[0];
+
+    return {
+        emotions,
+        dominant,
+        raw: Object.fromEntries(entries) // ham % değerler (0..25)
+    };
+}
+
+// Yeni: emotions objesini normalize edip geçerli duygu anahtarlarına eşler
+function normalizeEmotions(input) {
+    if (!input || typeof input !== 'object') return { merak: 1 };
+
+    const cleaned = {};
+    Object.entries(input).forEach(([k, v]) => {
+        if (!k) return;
+        const key = k.toString().trim().toLowerCase();
+        const val = Number(v) || 0;
+        if (EMOTIONS[key] && val > 0) cleaned[key] = (cleaned[key] || 0) + val;
+    });
+
+    // Eğer model bilinmeyen anahtarlar döndürdüyse veya hiç duygu yoksa varsayılanla devam et
+    if (Object.keys(cleaned).length === 0) {
+        return { merak: 1 };
+    }
+
+    // En az 3 duygu olması isteniyorsa eksik olanları küçük değerlerle ekle
+    const need = Math.max(0, 3 - Object.keys(cleaned).length);
+    if (need > 0) {
+        const available = Object.keys(EMOTIONS).filter(k => !cleaned[k]);
+        for (let i = 0; i < need && available.length > 0; i++) {
+            cleaned[available.shift()] = 0.01;
+        }
+    }
+
+    // Normalize et (toplam = 1)
+    let total = Object.values(cleaned).reduce((s, x) => s + x, 0);
+    if (total === 0) {
+        return { merak: 1 };
+    }
+    Object.keys(cleaned).forEach(k => cleaned[k] = +(cleaned[k] / total).toFixed(3));
+
+    // Küçük yuvarlama farkını en büyük elemana ekle
+    let sum = Object.values(cleaned).reduce((s, x) => s + x, 0);
+    const diff = Math.round((1 - sum) * 1000) / 1000;
+    if (Math.abs(diff) >= 0.001) {
+        const maxKey = Object.keys(cleaned).reduce((a, b) => cleaned[a] >= cleaned[b] ? a : b);
+        cleaned[maxKey] = +((cleaned[maxKey] + diff).toFixed(3));
+    }
+
+    return cleaned;
+}
     </script>
 </body>
 </html>
